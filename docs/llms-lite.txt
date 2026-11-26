@@ -1,6 +1,8 @@
-# AGENTS-LITE.md — ElliottDB Compact Agent Spec (v1.0.0)
+# ElliottDB — Compact Reference (`llms-lite.txt`, v1.0.0)
 
-**Identity**: Single-binary, zero-dep C11 RDBMS. Targets: `build\elliottdb.exe` (Win x64 `/MT`, `WS2_32`+`KERNEL32` only) & `build/elliottdb` (Linux x64 `pthread`+`lm`). Default port `7432` multiplexes Binary `EDB1`, HTTP/1.1 JSON, and Text SQL. Zero warnings under MSVC `/W4` & GCC `-Wall -Wextra`.
+> Full reference: [`llms.txt`](llms.txt) · Live docs: https://elliott964.github.io/ElliottDB/ · Repo: https://github.com/elliott964/ElliottDB
+
+**Identity**: Single-binary, zero-dep C11 RDBMS. Targets: `build\elliottdb.exe` (Win x64 `/MT`, `WS2_32`+`KERNEL32` only, `382,464` B) & `build/elliottdb` (Linux x64 `pthread`+`lm`). Default port `7432` multiplexes Binary `EDB1`, HTTP/1.1 JSON, and Text SQL. Zero warnings under MSVC `/W4` & GCC `-Wall -Wextra`.
 
 ## Code Map (`src/`)
 - `edb_common.h`, `edb_util.c`: `edb_status_t` (0..12), `edb_buf_t`, `edb_arena_t` (64KB blocks), `edb_crc32c`, `edb_hash64`, `edb_like_match`, text/JSON logger.
@@ -29,9 +31,8 @@
   - Resp `[0]='R', [1]=status(0..12), [2..3]=flags(b0=select,b1=cached), [4..7]=len`. Body: `PING`->`"PONG"`; Query->`[u64 aff][u64 last_id][u64 us]`, err? `[u16 elen][err]` : select? `[u32 cols][u32 rows]` + cols `[u16 nl][name][u8 typ]` + cells `[u8 typ][val]`. Types: `0=NULL,1=INT(i64),2=REAL(f64),3=TEXT(u32+b),4=BOOL(u8),5=BLOB(u32+b),6=TS(i64)`.
 - **HTTP JSON**: `GET /health`, `GET /metrics`, `GET /config`, `POST /query` (raw SQL or `{"sql":...}`), `POST /batch` (`;`-sep SQL). Basic Auth (`401` except `/health`).
 
-## Config & Commands
-- **Precedence**: Defaults < `elliottdb.conf` (`-c`) < `ELLIOTTDB_<SEC>_<KEY>` < `--sec.key=val` (`-H,-p,-d,-t,--memory,--no-banner`) < SQL `SET sec.key=val`.
+## SQL & Config Summary
+- **SQL**: `SELECT [DISTINCT] ... [FROM t [AS a] [INNER|LEFT|RIGHT|CROSS JOIN ... ON ...]] [WHERE ...] [GROUP BY ... HAVING ...] [ORDER BY ...] [LIMIT n [OFFSET m]]`; `INSERT INTO ... VALUES (...),(...)`; `UPDATE ... SET ... WHERE ...`; `DELETE FROM ... WHERE ...`; `CREATE|DROP|ALTER TABLE`; `CREATE|DROP INDEX [USING BTREE|HASH]`; `BEGIN|COMMIT|ROLLBACK`; `PREPARE|EXECUTE|DEALLOCATE`; `EXPLAIN`, `SHOW TABLES|CONFIG|STATS`, `DESCRIBE`, `SET`, `CHECKPOINT`.
+- **Config Precedence**: Defaults < `elliottdb.conf` (`-c`) < `ELLIOTTDB_<SEC>_<KEY>` < `--sec.key=val` (`-H,-p,-d,-t,--memory,--no-banner`) < SQL `SET sec.key=val`.
 - **Sections**: `server, network, concurrency, storage, buffer_pool, wal, query, index, security, logging, metrics` (schema: `docs/api/config-schema.json`).
-- **Build & Test**:
-  - Win: `build.bat` | CMake: `cmake -B build_cmake -G Ninja && cmake --build build_cmake` | Linux: `make` / `./build.sh --static`
-  - Test: `python tests\test_suite.py` | Regenerate docs data: `python scripts/gen_docs_data.py`
+- **Build & Test**: Win `build.bat` | CMake `cmake -B build_cmake -G Ninja && cmake --build build_cmake` | Linux `make` / `./build.sh --static` | Test `python tests\test_suite.py` | Docs `python scripts/gen_docs_data.py`.

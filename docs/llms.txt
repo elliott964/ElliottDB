@@ -1,13 +1,271 @@
-# ElliottDB
+# ElliottDB — Complete Technical Reference (`llms.txt`, v1.0.0)
 
-> Zero-dependency, single-binary, high-concurrency relational database in C11 for Linux and Windows. Multiplexes Binary (`EDB1`), HTTP/1.1 JSON, and Text SQL on port `7432` with auto-tuned defaults.
+> Single-binary, zero-dependency, high-concurrency relational database written in portable **C11** for **Windows** (`elliottdb.exe`) and **Linux** (`elliottdb`).
+> Compact version for minimal token budgets: [`llms-lite.txt`](llms-lite.txt) · Live Docs: https://elliott964.github.io/ElliottDB/ · Repo: https://github.com/elliott964/ElliottDB
 
-## Agent & Machine-Readable Entry Points
-- [Compact Agent Spec (AGENTS-LITE.md)](agents-lite.md): Ultra-dense, token-minimal engineering & protocol spec for system prompts.
-- [Full Agent Handbook (AGENTS.md)](agents.md): Complete codebase map, concurrency/memory invariants, wire formats, SQL dialect, and build/test commands.
-- [Complete Plaintext Bundle (llms-full.txt)](llms-full.txt): Single-file documentation + SQL + wire protocol + all 92 configuration parameters.
-- [Config JSON Schema (api/config-schema.json)](api/config-schema.json): Structured JSON schema of all 92 configuration options, defaults, ranges, env vars, and CLI flags.
-- [HTTP OpenAPI 3.1 Spec (api/openapi.json)](api/openapi.json): OpenAPI specification for `/health`, `/metrics`, `/config`, `/query`, and `/batch`.
+---
 
-## Human Documentation
-- [Interactive Documentation Portal](index.html): Architecture diagram, SQL guide, tabbed protocol examples, interactive 92-option Config Explorer, and `Ctrl+K` instant search.
+## 1. Project Identity & Core Constraints
+
+- **Release Targets**:
+  - Windows x64: `build\elliottdb.exe` (`382,464` bytes, statically linked `/MT`, OS dependencies `WS2_32.dll` + `KERNEL32.dll` only).
+  - Linux x64: `build/elliottdb` (GCC/Clang `-std=c11 -O3`, optional `-static`, `pthread` + `lm` only).
+- **Zero-Config UX**: Running `./elliottdb` or `elliottdb.exe` with no arguments binds `0.0.0.0:7432`, creates `./elliottdb_data`, auto-tunes worker/I/O threads and buffer pool (25% RAM, clamped 32 MB–2048 MB), and multiplexes **Binary (`EDB1`)**, **HTTP/1.1 JSON**, and **Text Line** protocols on the same TCP port.
+- **Compiler Discipline**: Zero warnings under MSVC `/W4` and GCC/Clang `-Wall -Wextra`.
+
+### Quick Start & Subcommands
+```bash
+./elliottdb                              # Start server (zero-config defaults)
+elliottdb cli -c "SHOW TABLES" -f json   # One-shot SQL over binary EDB1
+elliottdb bench --workload ping -c 64 -t 8 -n 200000 --pipeline 32
+elliottdb init-config elliottdb.conf     # Write full 92-option INI template
+```
+
+### Verified Windows Benchmarks (MSVC `/O2 /MT`, 8 Threads)
+- Embedded `point` (`200,000` reqs): `493,907 req/s` (`p50=6us`, `p95=10us`, `p99=76us`, `err=0`)
+- TCP IOCP `ping` (`200,000` reqs, 64 clients, pipeline 32): `466,944 req/s` (`p50=11us`, `p95=26us`, `p99=59us`, `err=0`)
+- TCP IOCP `read` (`100,000` reqs, 64 clients, pipeline 16): `171,326 req/s` (`p50=33us`, `p95=91us`, `p99=193us`, `err=0`)
+- TCP IOCP `mixed` (`50,000` reqs, 64 clients, pipeline 16): `112,176 req/s` (`p50=54us`, `p95=140us`, `p99=225us`, `err=0`)
+
+---
+
+## 2. Repository & Codebase Map
+
+| File | Responsibility & Key Symbols |
+| :--- | :--- |
+| `src/edb_common.h`, `src/edb_util.c` | `edb_status_t` (0..12), `edb_buf_t` dynamic byte buffer, `edb_arena_t` (64 KB chunk bump allocator), `edb_crc32c()`, `edb_hash64()`, `edb_hash_str_ci()`, `edb_like_match()`, `edb_json_append_escaped()`, thread-safe text/JSON logger (`edb_log_*`). |
+| `src/pal.h` | OS-agnostic atomics (`edb_atomic_i64/u64/u32`), `edb_mutex_t`, `edb_rwlock_t`, `edb_cond_t`, `edb_thread_t`, `edb_file_t`, `edb_socket_t`, `EDB_INVALID_SOCK`, time/CPU/RAM helpers. |
+| `src/pal_win.c` | Windows PAL: `Interlocked*`, `CRITICAL_SECTION`, `SRWLOCK`, `CONDITION_VARIABLE`, `_beginthreadex`, `QueryPerformanceCounter`, `CreateFileA` with `io_mu`-protected `SetFilePointerEx`+`ReadFile`/`WriteFile`, `SetConsoleCtrlHandler`, Winsock2. |
+| `src/pal_linux.c` | Linux PAL: `__atomic_*`, `pthread_*`, `clock_gettime`, `pread`/`pwrite`/`fdatasync`, `sigaction` (`SIGINT`/`SIGTERM`, `SIG_IGN` on `SIGPIPE`), POSIX sockets (`TCP_KEEPIDLE`, `SO_REUSEPORT`). |
+| `src/config.h`, `src/config.c` | `edb_config_t` & `g_specs[]` (**92** parameters across **11** sections): defaults, INI parser (`elliottdb.conf`), env vars (`ELLIOTTDB_<SECTION>_<KEY>`), CLI args (`--section.key=val`), `edb_config_finalize()`, `edb_config_set_kv()`, `edb_config_write_template()`, `edb_config_dump_json()`. |
+| `src/metrics.h`, `src/metrics.c` | Lock-free atomic counters (`active_connections`, `total_requests`, `select_count`, cache hits, WAL/buffer stats) + 16-bucket logarithmic latency histogram (`edb_metrics_percentile_us()`). |
+| `src/pager.h`, `src/pager.c` | 64-shard clock-sweep Buffer Pool (`edb_pager_t`), Page 0 `edb_file_header_t`, slotted page header `edb_page_hdr_t`, `edb_rid_t = (page_id << 16) | slot_idx`, pure `in_memory` mode. |
+| `src/wal.h`, `src/wal.c` | Append-only WAL (`elliottdb.wal`), `EDB_WAL_MAGIC = 0x45444257`, CRC32C record framing, `off | normal | full` sync modes, Group Commit coalescing (`group_commit_ms`, `group_commit_max_ops`), `edb_wal_replay()`. |
+| `src/index.h`, `src/index.c` | `edb_val_t` & `edb_val_cmp()`/`edb_val_hash()`, B+Tree (`EDB_IDX_BTREE` with doubly-linked leaves and `(key, rid)` tie-breaker for non-unique keys), open-addressed Hash index (`EDB_IDX_HASH`). |
+| `src/storage.h`, `src/storage.c` | `edb_db_t`, `edb_table_t` (per-table `edb_rwlock_t`, atomic `version`), `edb_txn_t` (undo log `UNDO_INSERT`/`DELETE`/`UPDATE`), catalog page serialization, WAL replay filtering uncommitted txns, `edb_db_checkpoint()`. |
+| `src/sql_ast.h`, `src/sql_parser.c` | Hand-written lexer & recursive-descent parser allocating AST nodes from `edb_arena_t`. |
+| `src/sql_exec.h`, `src/sql_exec.c` | `edb_engine_t` (64-shard plan cache + 64-shard atomic table-version-invalidated result cache), `edb_session_t`, index scan extractor, Hash Join + Nested Loop Join, `GROUP BY`/aggregates/`HAVING`, `ORDER BY`, `EXPLAIN`, `PREPARE`/`EXECUTE`, JSON/ASCII table formatters. |
+| `src/protocol.h`, `src/protocol.c` | Multiplexed protocol auto-detection (`PROTO_BINARY`, `PROTO_HTTP`, `PROTO_TEXT`), `EDB1` encoder/decoder (`edb_bin_encode_frame`, `edb_bin_decode_response`), HTTP/1.1 Keep-Alive router, Basic Auth. |
+| `src/reactor.h`, `src/reactor_win.c`, `src/reactor_linux.c` | Slab-pooled `edb_conn_t` lifecycle, atomic `refcount`, Windows IOCP (`WSARecv`/`WSASend` + `PostQueuedCompletionStatus`), Linux `epoll` (`EPOLLET` + `SO_REUSEPORT` + `eventfd`), RX/TX handoff. |
+| `src/server.h`, `src/server.c` | `edb_server_t`, sharded work-stealing queues (`edb_work_queue_t`), worker threads, maintenance thread (bg flush, WAL checkpoint, idle reaper, metrics log), graceful shutdown. |
+| `src/cli.c`, `src/bench.c`, `src/main.c` | Binary `EDB1` interactive/one-shot CLI, multi-threaded TCP & `--embedded` benchmark runner, CLI subcommand dispatcher & startup banner. |
+| `tests/test_suite.py` | End-to-end Python test suite: SQL/protocols, crash recovery (`proc.kill()`), config/auth, 200-client stress test, embedded & TCP IOCP benchmarks. |
+| `scripts/gen_docs_data.py` | Parses `g_specs[]` from `src/config.c` to regenerate `llms.txt`, `docs/llms.txt`, `docs/llms-lite.txt`, `docs/api/config-schema.json`, and `docs/config-data.js`. |
+
+---
+
+## 3. Critical Portability & Concurrency Invariants
+
+### Portability Rules (MUST follow on every edit)
+1. **Windows header order**: NEVER include `<windows.h>` before `<winsock2.h>` and `<ws2tcpip.h>`. Always include `pal.h` or define `WIN32_LEAN_AND_MEAN` and include `<winsock2.h>` first.
+2. **No `<stdatomic.h>`**: MSVC C11 support for `<stdatomic.h>` varies by SDK; always use `edb_atomic_i64`, `edb_atomic_u64`, `edb_atomic_u32` from `src/pal.h`.
+3. **No GCC extensions**: Avoid VLAs, `typeof`, statement expressions, and zero-length `[0]` arrays (use `[1]` or pointer allocations).
+4. **Linux feature macro**: Keep `#define _GNU_SOURCE` in `pal_linux.c`, `reactor_linux.c`, `CMakeLists.txt`, and `Makefile` (needed for `accept4`, `qsort_r`, `sigaction`, `pthread_rwlock_t`).
+5. **Portable `qsort`**: `sql_exec.c` uses `qsort_s(arr, n, sz, cmp, ctx)` on Windows (`cmp(ctx, a, b)`) and `qsort_r(arr, n, sz, cmp, ctx)` on Linux (`cmp(a, b, ctx)`).
+
+### Concurrency & Memory-Safety Invariants
+1. **Connection Reference Counting**: Every `edb_conn_t` starts with `refcount = 1` (owned by the open socket). Each in-flight `WSARecv`, `WSASend`, `IOCP_OP_KICK_SEND`, epoll event dispatch, or worker queue item MUST retain via `edb_reactor_conn_retain()` before queuing and release via `edb_reactor_conn_release()`. `free_conn_final()` runs strictly when `refcount == 0` and invokes `on_close` (`edb_session_destroy`) before returning the slot to `free_list`.
+2. **Double-Buffered IOCP Send (`reactor_win.c`)**: Workers append to `ctx->tx_buf` under `ctx->io_mu`. `try_start_send_locked()` swaps `ctx->tx_buf` into `ctx->tx_active` ONLY when `ctx->send_pending == false`. **Never** `realloc` `ctx->tx_active` while `WSASend` is in flight.
+3. **Lock Ordering (`io_mu` vs `pool_mu` vs `close_conn_socket`)**:
+   - In `alloc_conn()`: pop from `free_list` under `pool_mu`, unlock `pool_mu`, initialize ALL fields (including `last_active_ms = edb_now_ms()`), then re-acquire `pool_mu` to insert into `active_head`. Otherwise `edb_reactor_reap_idle()` can observe `last_active_ms == 0`.
+   - In `reactor_win.c` (`try_start_send_locked`) and `reactor_linux.c` (`flush_tx_locked`): never call `close_conn_socket()` while holding `ctx->io_mu`; return `bool need_close` and call `close_conn_socket()` after unlocking `ctx->io_mu`.
+4. **Per-Connection FIFO Ordering & Work Stealing (`server.c`)**:
+   - `conn->worker_busy` (CAS `0 -> 1`) guarantees at most one worker executes requests for a given connection at a time, preserving strict pipelined response order.
+   - `srv->queue_shards` is clamped to `<= srv->worker_count`, and shard selection uses `% srv->queue_shards`.
+   - `work_queue_pop()` uses a single `edb_cond_timedwait_ms(..., 5)` (`if`, NOT `while`) so idle workers return promptly and steal from busy shards.
+5. **GROUP BY & ORDER BY Aliases (`sql_exec.c`)**:
+   - `group_t` stores `const edb_row_t *const **tuples` (full joined tuple pointers across all `FROM`/`JOIN` sources), and `eval_aggregate()` updates all `ctx->sources[s].row` entries per tuple.
+   - `ORDER BY` resolves bare `EXPR_IDENT` against `projs[p].name` (SELECT column aliases) before falling back to table column lookup.
+6. **Cache Invalidation (`sql_exec.c`)**:
+   - Result cache entries store `schema_version` + `(table_id, table->version)` snapshots + `created_ms`. Bypassed when `sess->txn != NULL`, `param_count > 0`, or `NOW()` is present.
+
+---
+
+## 4. Wire Protocols (Multiplexed on Port `7432`)
+
+First-byte detection in `edb_protocol_process()` (`src/protocol.c`):
+- `0x45` (`'E'`): **Binary `EDB1`** (if `network.enable_binary_protocol = true`)
+- `GET `, `POST`, `HEAD`, `PUT `, `DELE`, `OPTI`: **HTTP/1.1 JSON** (if `network.enable_http = true`)
+- Anything else: **Text Line Protocol** (if `network.enable_text_protocol = true`)
+
+### Binary Protocol (`EDB1`) — Little-Endian
+- **Request Frame (8-byte header + payload)**:
+  - `[0]` `0x45` (`'E'`), `[1]` `op`, `[2..3]` `flags` (`u16`), `[4..7]` `len` (`u32`), `[8..8+len)` `payload`.
+  - Opcodes: `0x01 PING`, `0x02 QUERY` (UTF-8 SQL), `0x03 BATCH` (`;`-delimited SQL), `0x04 AUTH` (`[u16 ulen][user][u16 plen][pass]`), `0x05 PREPARE`, `0x06 EXEC`.
+- **Response Frame (8-byte header + payload)**:
+  - `[0]` `0x52` (`'R'`), `[1]` `status` (`edb_status_t`), `[2..3]` `flags` (`bit 0 = is_select_like`, `bit 1 = from_cache`), `[4..7]` `len` (`u32`).
+  - `PING` body: `"PONG"` (4 bytes).
+  - Query body: `[u64 rows_affected][u64 last_insert_id][u64 elapsed_us]`, then:
+    - If `status != 0`: `[u16 err_len][err_msg]`.
+    - Else if `is_select_like`: `[u32 col_count][u32 row_count]`, per-col `[u16 name_len][name][u8 type]`, per-cell `[u8 val_type][value]`.
+  - Value types: `0=NULL`, `1=INT(i64)`, `2=REAL(f64)`, `3=TEXT(u32 len + bytes)`, `4=BOOL(u8)`, `5=BLOB(u32 len + bytes)`, `6=TIMESTAMP(i64)`.
+  - Status codes: `0=OK`, `1=SYNTAX`, `2=NOT_FOUND`, `3=EXISTS`, `4=CONSTRAINT`, `5=IO`, `6=OOM`, `7=AUTH`, `8=OVERLOAD`, `9=INVALID`, `10=TXN`, `11=READONLY`, `12=INTERNAL`.
+
+### HTTP/1.1 JSON Endpoints
+- `GET /health` -> `{"status":"ok","version":"1.0.0","node":"...","uptime_sec":N}` (exempt from auth)
+- `GET /metrics` -> JSON counters + `latency_p50_us`, `latency_p95_us`, `latency_p99_us`
+- `GET /config` -> JSON map of all 92 `section.key` entries (`admin_password` masked)
+- `POST /query` -> Raw SQL body or `{"sql":"..."}` -> `{"ok":true,"rows_affected":...,"columns":[...],"rows":[[...]]}`
+- `POST /batch` -> `;`-delimited SQL -> JSON array `[...]`
+- Auth: `Authorization: Basic base64(user:password)` when `security.auth_enabled = true`.
+
+---
+
+## 5. SQL Dialect Reference
+
+- **Types**: `INT`, `REAL`, `TEXT`, `BOOL`, `BLOB`, `TIMESTAMP`.
+- **DDL**: `CREATE TABLE [IF NOT EXISTS] t (col TYPE [PRIMARY KEY] [AUTO_INCREMENT] [NOT NULL] [UNIQUE] [DEFAULT val], ...)`, `DROP TABLE [IF EXISTS] t`, `ALTER TABLE t ADD [COLUMN] coldef`, `CREATE [UNIQUE] INDEX [IF NOT EXISTS] idx ON t (col) [USING BTREE|HASH]`, `DROP INDEX [IF EXISTS] idx`.
+- **DML**: `INSERT INTO t [(cols)] VALUES (...), (...)`, `UPDATE t SET c=expr [WHERE ...]`, `DELETE FROM t [WHERE ...]`.
+- **Queries**: `SELECT [DISTINCT] items FROM t [AS a] [INNER|LEFT|RIGHT|CROSS JOIN t2 [AS b] ON expr] [WHERE expr] [GROUP BY exprs] [HAVING expr] [ORDER BY expr [ASC|DESC]] [LIMIT n [OFFSET m]]`.
+- **Expressions & Functions**: arithmetic (`+ - * / %`), concat (`||`), comparisons (`= != <> < <= > >=`), `IS [NOT] NULL`, `[NOT] IN (...)`, `[NOT] BETWEEN a AND b`, `[NOT] LIKE pat`, `AND`/`OR`/`NOT`, `CASE WHEN ... THEN ... ELSE ... END`, `COUNT(*|col|DISTINCT col)`, `SUM`, `AVG`, `MIN`, `MAX`, `LOWER`, `UPPER`, `LENGTH`, `COALESCE`, `ABS`, `NOW`, `ROUND`, `SUBSTR`.
+- **Transactions & Prepared**: `BEGIN [TRANSACTION]`, `COMMIT`, `ROLLBACK`, `PREPARE name AS sql`, `EXECUTE name(args...)`, `DEALLOCATE name`.
+- **Introspection & Admin**: `EXPLAIN <stmt>`, `SHOW TABLES`, `DESCRIBE <table>`, `SHOW CONFIG [LIKE 'pat']`, `SHOW STATS`, `SET section.key = value`, `CHECKPOINT`, `VACUUM`, `PING`.
+
+---
+
+## 6. Configuration System (92 Parameters, 11 Sections)
+
+Precedence (lowest to highest):
+1. Built-in auto-tuned defaults (`edb_config_defaults`)
+2. INI file (`-c path` or `./elliottdb.conf` in CWD)
+3. Env vars `ELLIOTTDB_<SECTION>_<KEY>` (uppercased, e.g. `ELLIOTTDB_SERVER_PORT=8000`)
+4. CLI flags (`--<section>.<key>=<value>`, or shortcuts `-H`, `-p`, `-d`, `-t`, `-c`, `--memory`, `--no-banner`)
+5. Runtime SQL `SET section.key = value` (for mutable keys)
+
+Machine-readable schemas: [`docs/api/config-schema.json`](docs/api/config-schema.json) · [`docs/api/openapi.json`](docs/api/openapi.json).
+
+### [server] (8 options)
+- `server.host` (`string`, default=`0.0.0.0`, restart-required, env=`ELLIOTTDB_SERVER_HOST`): Bind IP address (0.0.0.0 for all interfaces)
+- `server.port` (`int`, default=`7432` [range 1..65535], restart-required, env=`ELLIOTTDB_SERVER_PORT`): Primary TCP port (multiplexes Binary, HTTP/JSON, and Text protocols)
+- `server.http_port` (`int`, default=`0` [range 0..65535], restart-required, env=`ELLIOTTDB_SERVER_HTTP_PORT`): Optional dedicated HTTP port (0 = multiplexed on main port)
+- `server.node_name` (`string`, default=`elliottdb-1`, runtime-mutable, env=`ELLIOTTDB_SERVER_NODE_NAME`): Logical node identifier
+- `server.pid_file` (`string`, default=``, restart-required, env=`ELLIOTTDB_SERVER_PID_FILE`): Optional PID file path
+- `server.shutdown_timeout_ms` (`int`, default=`5000` [range 100..300000], runtime-mutable, env=`ELLIOTTDB_SERVER_SHUTDOWN_TIMEOUT_MS`): Graceful shutdown drain timeout in ms
+- `server.banner_enabled` (`bool`, default=`true`, restart-required, env=`ELLIOTTDB_SERVER_BANNER_ENABLED`): Print startup banner
+- `server.daemonize` (`bool`, default=`false`, restart-required, env=`ELLIOTTDB_SERVER_DAEMONIZE`): Run as background daemon (Linux)
+
+### [network] (20 options)
+- `network.max_connections` (`int`, default=`0` [range 0..100000000], runtime-mutable, env=`ELLIOTTDB_NETWORK_MAX_CONNECTIONS`): Max concurrent connections (0 = unlimited dynamically growing slab)
+- `network.listen_backlog` (`int`, default=`65535` [range 16..1048576], restart-required, env=`ELLIOTTDB_NETWORK_LISTEN_BACKLOG`): TCP listen backlog
+- `network.io_threads` (`int`, default=`0` [range 0..256], restart-required, env=`ELLIOTTDB_NETWORK_IO_THREADS`): Reactor I/O threads (0 = auto)
+- `network.tcp_nodelay` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_NETWORK_TCP_NODELAY`): Disable Nagle's algorithm for low latency
+- `network.tcp_keepalive` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_NETWORK_TCP_KEEPALIVE`): Enable TCP keepalive probes
+- `network.keepalive_idle_sec` (`int`, default=`60` [range 1..86400], runtime-mutable, env=`ELLIOTTDB_NETWORK_KEEPALIVE_IDLE_SEC`): TCP keepalive idle seconds
+- `network.keepalive_interval_sec` (`int`, default=`10` [range 1..3600], runtime-mutable, env=`ELLIOTTDB_NETWORK_KEEPALIVE_INTERVAL_SEC`): TCP keepalive probe interval seconds
+- `network.socket_recv_buf_kb` (`int`, default=`256` [range 0..65536], runtime-mutable, env=`ELLIOTTDB_NETWORK_SOCKET_RECV_BUF_KB`): SO_RCVBUF size in KB (0 = OS default)
+- `network.socket_send_buf_kb` (`int`, default=`256` [range 0..65536], runtime-mutable, env=`ELLIOTTDB_NETWORK_SOCKET_SEND_BUF_KB`): SO_SNDBUF size in KB (0 = OS default)
+- `network.read_buf_initial_kb` (`int`, default=`8` [range 1..4096], runtime-mutable, env=`ELLIOTTDB_NETWORK_READ_BUF_INITIAL_KB`): Initial per-connection read buffer in KB
+- `network.read_buf_max_mb` (`int`, default=`64` [range 1..1024], runtime-mutable, env=`ELLIOTTDB_NETWORK_READ_BUF_MAX_MB`): Maximum per-connection read buffer in MB
+- `network.write_buf_initial_kb` (`int`, default=`16` [range 1..4096], runtime-mutable, env=`ELLIOTTDB_NETWORK_WRITE_BUF_INITIAL_KB`): Initial per-connection write buffer in KB
+- `network.idle_timeout_sec` (`int`, default=`300` [range 0..864000], runtime-mutable, env=`ELLIOTTDB_NETWORK_IDLE_TIMEOUT_SEC`): Close idle connections after N seconds (0 = disabled)
+- `network.request_timeout_ms` (`int`, default=`30000` [range 0..3600000], runtime-mutable, env=`ELLIOTTDB_NETWORK_REQUEST_TIMEOUT_MS`): Request execution timeout in ms
+- `network.max_pipeline_depth` (`int`, default=`1024` [range 1..65536], runtime-mutable, env=`ELLIOTTDB_NETWORK_MAX_PIPELINE_DEPTH`): Max pipelined frames processed per connection batch
+- `network.max_query_size_mb` (`int`, default=`16` [range 1..512], runtime-mutable, env=`ELLIOTTDB_NETWORK_MAX_QUERY_SIZE_MB`): Maximum SQL query payload in MB
+- `network.enable_http` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_NETWORK_ENABLE_HTTP`): Enable HTTP/1.1 JSON API
+- `network.enable_binary_protocol` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_NETWORK_ENABLE_BINARY_PROTOCOL`): Enable high-speed EDB1 binary protocol
+- `network.enable_text_protocol` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_NETWORK_ENABLE_TEXT_PROTOCOL`): Enable text line SQL protocol
+- `network.reuse_port` (`bool`, default=`true`, restart-required, env=`ELLIOTTDB_NETWORK_REUSE_PORT`): Enable SO_REUSEPORT on Linux
+
+### [concurrency] (10 options)
+- `concurrency.worker_threads` (`int`, default=`0` [range 0..1024], restart-required, env=`ELLIOTTDB_CONCURRENCY_WORKER_THREADS`): Query worker threads (0 = auto CPU count)
+- `concurrency.queue_capacity` (`int`, default=`65536` [range 64..16777216], restart-required, env=`ELLIOTTDB_CONCURRENCY_QUEUE_CAPACITY`): Total request queue capacity across shards
+- `concurrency.queue_shards` (`int`, default=`16` [range 1..256], restart-required, env=`ELLIOTTDB_CONCURRENCY_QUEUE_SHARDS`): Number of work queue shards (power of 2 recommended)
+- `concurrency.lock_stripes` (`int`, default=`64` [range 1..1024], restart-required, env=`ELLIOTTDB_CONCURRENCY_LOCK_STRIPES`): Lock stripe count for sharded subsystems
+- `concurrency.spin_count` (`int`, default=`4000` [range 0..100000], runtime-mutable, env=`ELLIOTTDB_CONCURRENCY_SPIN_COUNT`): Spin count before sleeping
+- `concurrency.batch_dispatch_size` (`int`, default=`64` [range 1..4096], runtime-mutable, env=`ELLIOTTDB_CONCURRENCY_BATCH_DISPATCH_SIZE`): Batch size for queue dispatch
+- `concurrency.max_concurrent_writers` (`int`, default=`0` [range 0..1024], runtime-mutable, env=`ELLIOTTDB_CONCURRENCY_MAX_CONCURRENT_WRITERS`): Max concurrent writers (0 = auto)
+- `concurrency.overload_policy` (`string`, default=`queue`, runtime-mutable, env=`ELLIOTTDB_CONCURRENCY_OVERLOAD_POLICY`): Overload handling: queue | shed | backpressure
+- `concurrency.max_queue_wait_ms` (`int`, default=`5000` [range 1..600000], runtime-mutable, env=`ELLIOTTDB_CONCURRENCY_MAX_QUEUE_WAIT_MS`): Max time a request waits in queue
+- `concurrency.conn_slab_chunk` (`int`, default=`1024` [range 64..65536], restart-required, env=`ELLIOTTDB_CONCURRENCY_CONN_SLAB_CHUNK`): Connections allocated per slab chunk
+
+### [storage] (9 options)
+- `storage.data_dir` (`string`, default=`./elliottdb_data`, restart-required, env=`ELLIOTTDB_STORAGE_DATA_DIR`): Database data directory
+- `storage.db_filename` (`string`, default=`elliottdb.edb`, restart-required, env=`ELLIOTTDB_STORAGE_DB_FILENAME`): Primary database file name
+- `storage.page_size` (`int`, default=`8192` [range 4096..65536], restart-required, env=`ELLIOTTDB_STORAGE_PAGE_SIZE`): Page size in bytes (power of 2: 4096..65536)
+- `storage.in_memory` (`bool`, default=`false`, restart-required, env=`ELLIOTTDB_STORAGE_IN_MEMORY`): Run purely in memory with no disk persistence
+- `storage.auto_create_dir` (`bool`, default=`true`, restart-required, env=`ELLIOTTDB_STORAGE_AUTO_CREATE_DIR`): Automatically create data directory
+- `storage.preallocate_mb` (`int`, default=`0` [range 0..1048576], restart-required, env=`ELLIOTTDB_STORAGE_PREALLOCATE_MB`): Preallocate database file size in MB
+- `storage.fill_factor` (`int`, default=`90` [range 50..100], runtime-mutable, env=`ELLIOTTDB_STORAGE_FILL_FACTOR`): Target page fill factor percentage
+- `storage.compact_threshold_pct` (`int`, default=`30` [range 5..90], runtime-mutable, env=`ELLIOTTDB_STORAGE_COMPACT_THRESHOLD_PCT`): Dead-space percentage triggering page compaction
+- `storage.max_db_size_gb` (`int`, default=`0` [range 0..1048576], runtime-mutable, env=`ELLIOTTDB_STORAGE_MAX_DB_SIZE_GB`): Maximum database size in GB (0 = unlimited)
+
+### [buffer_pool] (6 options)
+- `buffer_pool.size_mb` (`int`, default=`0` [range 0..1048576], restart-required, env=`ELLIOTTDB_BUFFER_POOL_SIZE_MB`): Buffer pool memory in MB (0 = auto 25% RAM, min 32MB, max 2048MB)
+- `buffer_pool.shards` (`int`, default=`64` [range 1..256], restart-required, env=`ELLIOTTDB_BUFFER_POOL_SHARDS`): Buffer pool partition shards (power of 2)
+- `buffer_pool.eviction_policy` (`string`, default=`clock`, restart-required, env=`ELLIOTTDB_BUFFER_POOL_EVICTION_POLICY`): Eviction policy: clock | lru
+- `buffer_pool.dirty_flush_pct` (`int`, default=`75` [range 10..100], runtime-mutable, env=`ELLIOTTDB_BUFFER_POOL_DIRTY_FLUSH_PCT`): Dirty page threshold percentage
+- `buffer_pool.bg_flush_interval_ms` (`int`, default=`1000` [range 50..60000], runtime-mutable, env=`ELLIOTTDB_BUFFER_POOL_BG_FLUSH_INTERVAL_MS`): Background flush interval in ms
+- `buffer_pool.prefetch_pages` (`int`, default=`4` [range 0..128], runtime-mutable, env=`ELLIOTTDB_BUFFER_POOL_PREFETCH_PAGES`): Sequential scan prefetch pages
+
+### [wal] (10 options)
+- `wal.enabled` (`bool`, default=`true`, restart-required, env=`ELLIOTTDB_WAL_ENABLED`): Enable Write-Ahead Logging
+- `wal.dir` (`string`, default=``, restart-required, env=`ELLIOTTDB_WAL_DIR`): WAL directory (empty = same as data_dir)
+- `wal.sync_mode` (`string`, default=`normal`, runtime-mutable, env=`ELLIOTTDB_WAL_SYNC_MODE`): Durability mode: off | normal | full
+- `wal.group_commit_ms` (`int`, default=`1` [range 0..1000], runtime-mutable, env=`ELLIOTTDB_WAL_GROUP_COMMIT_MS`): Group commit coalescing window in ms
+- `wal.group_commit_max_ops` (`int`, default=`1024` [range 1..65536], runtime-mutable, env=`ELLIOTTDB_WAL_GROUP_COMMIT_MAX_OPS`): Max operations per group commit batch
+- `wal.segment_size_mb` (`int`, default=`64` [range 1..4096], restart-required, env=`ELLIOTTDB_WAL_SEGMENT_SIZE_MB`): WAL segment rotation size in MB
+- `wal.checkpoint_interval_sec` (`int`, default=`60` [range 1..86400], runtime-mutable, env=`ELLIOTTDB_WAL_CHECKPOINT_INTERVAL_SEC`): Automatic checkpoint interval in seconds
+- `wal.checkpoint_wal_mb` (`int`, default=`32` [range 1..16384], runtime-mutable, env=`ELLIOTTDB_WAL_CHECKPOINT_WAL_MB`): Trigger checkpoint when WAL exceeds N MB
+- `wal.checksum_enabled` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_WAL_CHECKSUM_ENABLED`): Verify CRC32C checksums on WAL records
+- `wal.recovery_mode` (`string`, default=`strict`, restart-required, env=`ELLIOTTDB_WAL_RECOVERY_MODE`): WAL recovery mode: strict | lenient
+
+### [query] (11 options)
+- `query.plan_cache_enabled` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_QUERY_PLAN_CACHE_ENABLED`): Enable sharded parsed SQL plan cache
+- `query.plan_cache_entries` (`int`, default=`4096` [range 0..1000000], runtime-mutable, env=`ELLIOTTDB_QUERY_PLAN_CACHE_ENTRIES`): Max cached SQL plans
+- `query.result_cache_enabled` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_QUERY_RESULT_CACHE_ENABLED`): Enable sharded query result cache
+- `query.result_cache_mb` (`int`, default=`64` [range 0..65536], runtime-mutable, env=`ELLIOTTDB_QUERY_RESULT_CACHE_MB`): Max result cache memory in MB
+- `query.result_cache_ttl_ms` (`int`, default=`5000` [range 0..3600000], runtime-mutable, env=`ELLIOTTDB_QUERY_RESULT_CACHE_TTL_MS`): Result cache entry TTL in ms
+- `query.max_rows_returned` (`int`, default=`1000000` [range 0..100000000], runtime-mutable, env=`ELLIOTTDB_QUERY_MAX_ROWS_RETURNED`): Safety cap on rows returned per query (0 = unlimited)
+- `query.default_limit` (`int`, default=`0` [range 0..10000000], runtime-mutable, env=`ELLIOTTDB_QUERY_DEFAULT_LIMIT`): Default SELECT LIMIT if omitted (0 = none)
+- `query.work_mem_mb` (`int`, default=`16` [range 1..16384], runtime-mutable, env=`ELLIOTTDB_QUERY_WORK_MEM_MB`): Per-query sort/hash work memory in MB
+- `query.hash_join_enabled` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_QUERY_HASH_JOIN_ENABLED`): Use hash join for equi-joins
+- `query.index_scan_enabled` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_QUERY_INDEX_SCAN_ENABLED`): Use B+Tree/Hash indexes for WHERE predicates
+- `query.slow_query_ms` (`int`, default=`100` [range 0..3600000], runtime-mutable, env=`ELLIOTTDB_QUERY_SLOW_QUERY_MS`): Slow query threshold in ms
+
+### [index] (4 options)
+- `index.btree_order` (`int`, default=`64` [range 8..512], restart-required, env=`ELLIOTTDB_INDEX_BTREE_ORDER`): B+Tree branching order
+- `index.auto_index_pk` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_INDEX_AUTO_INDEX_PK`): Automatically create index on PRIMARY KEY
+- `index.default_index_type` (`string`, default=`btree`, runtime-mutable, env=`ELLIOTTDB_INDEX_DEFAULT_INDEX_TYPE`): Default index type: btree | hash
+- `index.hash_load_factor` (`int`, default=`75` [range 25..95], runtime-mutable, env=`ELLIOTTDB_INDEX_HASH_LOAD_FACTOR`): Hash index resize load factor percentage
+
+### [security] (6 options)
+- `security.auth_enabled` (`bool`, default=`false`, runtime-mutable, env=`ELLIOTTDB_SECURITY_AUTH_ENABLED`): Require authentication on connections
+- `security.admin_user` (`string`, default=`admin`, runtime-mutable, env=`ELLIOTTDB_SECURITY_ADMIN_USER`): Default admin username
+- `security.admin_password` (`string`, default=``, runtime-mutable, env=`ELLIOTTDB_SECURITY_ADMIN_PASSWORD`): Admin password when auth_enabled=true
+- `security.read_only` (`bool`, default=`false`, runtime-mutable, env=`ELLIOTTDB_SECURITY_READ_ONLY`): Reject all write/DDL queries
+- `security.max_auth_failures` (`int`, default=`5` [range 1..1000], runtime-mutable, env=`ELLIOTTDB_SECURITY_MAX_AUTH_FAILURES`): Disconnect after N failed auth attempts
+- `security.allowed_hosts` (`string`, default=`*`, runtime-mutable, env=`ELLIOTTDB_SECURITY_ALLOWED_HOSTS`): Allowed host pattern (* for any)
+
+### [logging] (5 options)
+- `logging.level` (`string`, default=`info`, runtime-mutable, env=`ELLIOTTDB_LOGGING_LEVEL`): Log level: trace | debug | info | warn | error | fatal
+- `logging.file` (`string`, default=``, restart-required, env=`ELLIOTTDB_LOGGING_FILE`): Log file path (empty = stderr)
+- `logging.format` (`string`, default=`text`, restart-required, env=`ELLIOTTDB_LOGGING_FORMAT`): Log format: text | json
+- `logging.log_queries` (`bool`, default=`false`, runtime-mutable, env=`ELLIOTTDB_LOGGING_LOG_QUERIES`): Log every executed SQL query
+- `logging.log_slow_queries` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_LOGGING_LOG_SLOW_QUERIES`): Log queries slower than slow_query_ms
+
+### [metrics] (3 options)
+- `metrics.enabled` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_METRICS_ENABLED`): Collect atomic runtime metrics
+- `metrics.interval_sec` (`int`, default=`0` [range 0..86400], runtime-mutable, env=`ELLIOTTDB_METRICS_INTERVAL_SEC`): Periodic metrics log interval in sec (0 = disabled)
+- `metrics.track_latency` (`bool`, default=`true`, runtime-mutable, env=`ELLIOTTDB_METRICS_TRACK_LATENCY`): Track microsecond latency histogram
+
+---
+
+## 7. Build, Test & Maintenance Commands
+
+```bat
+:: Windows static single binary (MSVC /O2 /MT /W4)
+build.bat
+:: Verify zero non-OS DLL dependencies
+dumpbin /dependents build\elliottdb.exe
+:: Run full end-to-end test & benchmark suite
+python tests\test_suite.py
+```
+
+```bash
+# Linux single binary
+make            # or: make static / ./build.sh --static
+# CMake (Windows or Linux)
+cmake -B build_cmake -G Ninja && cmake --build build_cmake
+# Regenerate llms.txt, config-schema.json, and config-data.js from src/config.c
+python scripts/gen_docs_data.py
+```

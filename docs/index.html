@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ElliottDB v1.0.0 — Reference Manual</title>
   <meta name="description" content="Single-binary C11 relational database for Linux and Windows. IOCP/epoll reactor, 64-shard clock-sweep buffer pool, CRC32C WAL, B+Tree/Hash indexes, and multiplexed Binary/HTTP/Text protocols.">
-  <link rel="alternate" type="text/plain" title="AI Agent Directory (llms.txt)" href="llms.txt">
-  <link rel="alternate" type="text/plain" title="Full Agent Knowledge Base (llms-full.txt)" href="llms-full.txt">
+  <link rel="alternate" type="text/plain" title="Full Reference (llms.txt)" href="llms.txt">
+  <link rel="alternate" type="text/plain" title="Compact Reference (llms-lite.txt)" href="llms-lite.txt">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -71,6 +71,7 @@
           <a class="btn btn-primary" href="#protocols">Protocols &amp; API</a>
           <a class="btn" href="#config">Config Explorer (92)</a>
           <a class="btn" href="llms.txt">llms.txt</a>
+          <a class="btn" href="llms-lite.txt">llms-lite.txt</a>
           <a class="btn" href="https://github.com/elliott964/ElliottDB/releases/tag/v1.0.0" target="_blank" rel="noopener">v1.0.0 Release</a>
         </div>
 
@@ -402,17 +403,15 @@ python tests/test_suite.py</code></pre>
         </div>
       </section>
 
-      <section class="doc-section" id="agents" data-title="Agent Artifacts" data-desc="AGENTS.md, AGENTS-LITE.md, llms.txt, llms-full.txt, config-schema.json, openapi.json">
+      <section class="doc-section" id="agents" data-title="Agent Artifacts" data-desc="llms.txt, llms-lite.txt, config-schema.json, openapi.json">
         <h2>Machine-Readable &amp; AI Agent Artifacts</h2>
-        <p>All documentation specs, engineering invariants, and configuration metadata are published as plain text and JSON directly alongside this manual.</p>
+        <p>All documentation specs, engineering invariants, SQL syntax, and configuration metadata are published as Markdown and JSON directly alongside this manual.</p>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Artifact</th><th>Format</th><th>Contents</th></tr></thead>
             <tbody>
-              <tr><td><a href="agents-lite.md"><code>agents-lite.md</code></a></td><td>Markdown</td><td>Compact (~70-line) dense spec of architecture, hard concurrency invariants, wire bytes, and build commands.</td></tr>
-              <tr><td><a href="agents.md"><code>agents.md</code></a></td><td>Markdown</td><td>Full engineering handbook: module map, lock ordering, IOCP/epoll contracts, protocol layouts, and test commands.</td></tr>
-              <tr><td><a href="llms.txt"><code>llms.txt</code></a></td><td>Plaintext</td><td>Standard LLM index linking all machine-readable files.</td></tr>
-              <tr><td><a href="llms-full.txt"><code>llms-full.txt</code></a></td><td>Plaintext</td><td>Single-file bundle containing SQL reference, benchmarks, all 92 config options, and agent handbooks.</td></tr>
+              <tr><td><a href="llms.txt"><code>llms.txt</code></a></td><td>Markdown</td><td>Complete reference: codebase map, portability &amp; concurrency invariants, wire protocols, SQL dialect, all 92 config options, and build/test commands.</td></tr>
+              <tr><td><a href="llms-lite.txt"><code>llms-lite.txt</code></a></td><td>Markdown</td><td>Compact, ultra-dense engineering spec (~70 lines) for minimal-token agent system prompts.</td></tr>
               <tr><td><a href="api/config-schema.json"><code>api/config-schema.json</code></a></td><td>JSON</td><td>Parsed schema of all 92 options from <code>src/config.c</code> (types, defaults, bounds, env vars, CLI flags).</td></tr>
               <tr><td><a href="api/openapi.json"><code>api/openapi.json</code></a></td><td>OpenAPI 3.1</td><td>HTTP/1.1 JSON API specification (<code>/health</code>, <code>/metrics</code>, <code>/config</code>, <code>/query</code>, <code>/batch</code>).</td></tr>
             </tbody>

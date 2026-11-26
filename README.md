@@ -5,7 +5,7 @@
 No Docker. No runtime dependencies. No external libraries. Just run the binary and it starts immediately with auto-tuned sensible defaults.
 
 - **Documentation Portal**: https://elliott964.github.io/ElliottDB/ ([`docs/index.html`](docs/index.html))
-- **For AI Agents**: [`AGENTS-LITE.md`](AGENTS-LITE.md) (compact spec) · [`AGENTS.md`](AGENTS.md) (full handbook) · [`docs/llms.txt`](docs/llms.txt) · [`docs/llms-full.txt`](docs/llms-full.txt) · [`docs/api/config-schema.json`](docs/api/config-schema.json)
+- **For AI Agents**: [`llms.txt`](llms.txt) (complete Markdown reference) · [`llms-lite.txt`](llms-lite.txt) (compact Markdown reference) · [`docs/api/config-schema.json`](docs/api/config-schema.json) · [`docs/api/openapi.json`](docs/api/openapi.json)
 
 ### Verified Windows Benchmarks (MSVC `/O2 /MT`, 8 Threads)
 - **Embedded `point` (`200,000` reqs)**: `493,907 req/s` (`p50=6us`, `p95=10us`, `p99=76us`)
