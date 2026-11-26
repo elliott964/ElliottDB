@@ -3,49 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ElliottDB v1.0.0 — Reference Manual</title>
+  <title>ElliottDB Documentation — Single-Binary C11 Relational Database</title>
   <meta name="description" content="Single-binary C11 relational database for Linux and Windows. IOCP/epoll reactor, 64-shard clock-sweep buffer pool, CRC32C WAL, B+Tree/Hash indexes, and multiplexed Binary/HTTP/Text protocols.">
-  <link rel="alternate" type="text/plain" title="Full Reference (llms.txt)" href="llms.txt">
+  <link rel="alternate" type="text/plain" title="Complete Reference (llms.txt)" href="llms.txt">
   <link rel="alternate" type="text/plain" title="Compact Reference (llms-lite.txt)" href="llms-lite.txt">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to documentation</a>
+  <div id="liveAnnouncer" class="sr-only" aria-live="polite"></div>
+
   <header class="topbar">
-    <div class="topbar-left">
-      <button class="nav-btn menu-btn" id="menuToggle" type="button" aria-label="Toggle Menu">Menu</button>
-      <a class="brand" href="#overview">
-        <span>ElliottDB</span>
-        <span class="brand-ver">1.0.0</span>
-      </a>
-    </div>
+    <div class="topbar-inner">
+      <div class="topbar-left">
+        <button class="menu-btn" id="menuToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <a class="brand" href="#overview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/>
+            <rect x="3" y="10" width="18" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/>
+            <rect x="3" y="16" width="18" height="4" rx="1" stroke="currentColor" stroke-width="1.8"/>
+          </svg>
+          <span>ElliottDB</span>
+          <span class="brand-sep">/</span>
+          <span class="brand-sub">Docs</span>
+        </a>
+        <span class="version-chip">v1.0.0</span>
+      </div>
 
-    <div class="topbar-center">
-      <button class="search-trigger" id="openSearchBtn" type="button">
-        <span>Search manual &amp; 92 config keys</span>
-        <span class="kbd">Ctrl+K</span>
-      </button>
-    </div>
+      <div class="topbar-right">
+        <nav class="top-links" aria-label="Primary">
+          <a class="top-link" href="#sql">SQL</a>
+          <a class="top-link" href="#protocols">Protocols</a>
+          <a class="top-link" href="#config">Config</a>
+          <a class="top-link" href="llms.txt">llms.txt</a>
+          <a class="top-link" href="https://github.com/elliott964/ElliottDB" target="_blank" rel="noopener">GitHub</a>
+        </nav>
 
-    <nav class="topbar-actions">
-      <a class="nav-btn" href="#agents">llms.txt</a>
-      <a class="nav-btn hide-sm" href="https://github.com/elliott964/ElliottDB" target="_blank" rel="noopener">GitHub</a>
-      <button class="nav-btn" id="themeToggle" type="button">Dark</button>
-    </nav>
+        <button class="search-trigger" id="openSearchBtn" type="button" aria-label="Search documentation">
+          <span class="search-trigger-label">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            <span>Search…</span>
+          </span>
+          <kbd class="kbd" id="shortcutKbd">Ctrl K</kbd>
+        </button>
+
+        <div class="theme-switcher" role="group" aria-label="Color theme">
+          <button class="theme-btn" type="button" data-theme-choice="system" aria-label="System theme" aria-pressed="true" title="System theme">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="2" y="2.5" width="12" height="8.5" rx="1.2" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M5.5 13.5h5M8 11v2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="theme-btn" type="button" data-theme-choice="light" aria-label="Light theme" aria-pressed="false" title="Light theme">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M12.6 3.4l-1.1 1.1M4.5 11.5l-1.1 1.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="theme-btn" type="button" data-theme-choice="dark" aria-label="Dark theme" aria-pressed="false" title="Dark theme">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M13.2 10.2A5.5 5.5 0 0 1 5.8 2.8a5.5 5.5 0 1 0 7.4 7.4Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
   </header>
 
   <div class="layout">
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Documentation">
       <div class="sidebar-group">
-        <div class="sidebar-title">Manual</div>
-        <a href="#overview">Overview &amp; Quickstart</a>
+        <div class="sidebar-title">Getting Started</div>
+        <a href="#overview">Introduction &amp; Quickstart</a>
         <a href="#benchmarks">Benchmarks</a>
         <a href="#subcommands">CLI &amp; Subcommands</a>
       </div>
       <div class="sidebar-group">
-        <div class="sidebar-title">Internals</div>
-        <a href="#architecture">Architecture</a>
+        <div class="sidebar-title">Architecture</div>
+        <a href="#architecture">Pipeline Schematic</a>
         <a href="#storage-engine">Storage, WAL &amp; Indexes</a>
-        <a href="#concurrency">Reactor &amp; Workers</a>
+        <a href="#concurrency">IOCP / epoll &amp; Workers</a>
       </div>
       <div class="sidebar-group">
         <div class="sidebar-title">Reference</div>
@@ -54,33 +98,75 @@
         <a href="#config">Configuration (92)</a>
       </div>
       <div class="sidebar-group">
-        <div class="sidebar-title">Operations &amp; Agents</div>
+        <div class="sidebar-title">Operations &amp; LLMs</div>
         <a href="#operations">Build &amp; Durability</a>
-        <a href="#agents">Agent Artifacts</a>
+        <a href="#agents">llms.txt &amp; JSON Schemas</a>
       </div>
     </aside>
 
-    <main class="content">
-      <section class="doc-section" id="overview" data-title="Overview &amp; Quickstart" data-desc="Single-binary C11 RDBMS, zero-config startup, port 7432">
-        <h1>ElliottDB</h1>
-        <p class="doc-lead">
-          Single-binary relational database written in portable C11 for Windows and Linux.
-          Statically linked with zero runtime dependencies (382 KB on Windows x64, requiring only <code>WS2_32.dll</code> and <code>KERNEL32.dll</code>), binding <code>0.0.0.0:7432</code> with auto-tuned CPU threads and buffer pool on launch.
-        </p>
-        <div class="action-links">
-          <a class="btn btn-primary" href="#protocols">Protocols &amp; API</a>
-          <a class="btn" href="#config">Config Explorer (92)</a>
-          <a class="btn" href="llms.txt">llms.txt</a>
-          <a class="btn" href="llms-lite.txt">llms-lite.txt</a>
-          <a class="btn" href="https://github.com/elliott964/ElliottDB/releases/tag/v1.0.0" target="_blank" rel="noopener">v1.0.0 Release</a>
+    <main class="content" id="main-content" tabindex="-1">
+      <section class="doc-section" id="overview" data-title="Introduction &amp; Quickstart" data-desc="Single-binary C11 RDBMS, zero-config startup, port 7432">
+        <div class="geist-grid-frame">
+          <span class="reg-mark reg-tl" aria-hidden="true">+</span>
+          <span class="reg-mark reg-tr" aria-hidden="true">+</span>
+          <span class="reg-mark reg-bl" aria-hidden="true">+</span>
+          <span class="reg-mark reg-br" aria-hidden="true">+</span>
+
+          <div class="hero-body">
+            <div class="hero-kicker">
+              <span class="status-dot" aria-hidden="true"></span>
+              <span>C11 · Single Binary · Zero Dependencies · Windows &amp; Linux</span>
+            </div>
+            <h1>ElliottDB</h1>
+            <p class="hero-lead">
+              A statically linked relational database compiled to one standalone executable (382 KB on Windows x64, requiring only <code>WS2_32.dll</code> and <code>KERNEL32.dll</code>). Launch with zero configuration to bind <code>0.0.0.0:7432</code> across Binary <code>EDB1</code>, HTTP/1.1 JSON, and Text SQL.
+            </p>
+            <div class="hero-actions">
+              <div class="launch-pill">
+                <span class="launch-prompt">$</span>
+                <span id="launchCmd">./elliottdb</span>
+                <button class="icon-copy-btn" type="button" data-copy-target="launchCmd" aria-label="Copy launch command">Copy</button>
+              </div>
+              <a class="btn btn-primary" href="#protocols">Explore API</a>
+              <a class="btn" href="#config">92 Config Options</a>
+              <a class="btn" href="https://github.com/elliott964/ElliottDB/releases/tag/v1.0.0" target="_blank" rel="noopener">Download v1.0.0</a>
+            </div>
+          </div>
+
+          <div class="bench-strip" aria-label="Verified benchmark highlights">
+            <div class="bench-cell">
+              <div class="bench-val">493,907/s</div>
+              <div class="bench-name">Embedded Point</div>
+              <div class="bench-meta">p50 6µs · p99 76µs</div>
+            </div>
+            <div class="bench-cell">
+              <div class="bench-val">466,944/s</div>
+              <div class="bench-name">TCP IOCP Ping</div>
+              <div class="bench-meta">p50 11µs · p99 59µs</div>
+            </div>
+            <div class="bench-cell">
+              <div class="bench-val">171,326/s</div>
+              <div class="bench-name">TCP IOCP Read</div>
+              <div class="bench-meta">64 clients · p50 33µs</div>
+            </div>
+            <div class="bench-cell">
+              <div class="bench-val">112,176/s</div>
+              <div class="bench-name">TCP Mixed R/W</div>
+              <div class="bench-meta">64 clients · p50 54µs</div>
+            </div>
+          </div>
         </div>
 
-        <div class="code-wrap">
-          <pre><code># Start server (creates ./elliottdb_data, auto-sizes threads and buffer pool)
+        <div class="code-window">
+          <div class="code-head">
+            <span class="code-title">quickstart.sh</span>
+            <button class="icon-copy-btn" type="button" data-copy-code>Copy</button>
+          </div>
+          <pre><code data-lang="bash"># 1. Start server (creates ./elliottdb_data, auto-sizes threads and buffer pool)
 ./elliottdb                # Linux
 elliottdb.exe              # Windows
 
-# Execute SQL via built-in binary CLI or HTTP/1.1 on port 7432
+# 2. Run SQL over Binary EDB1 CLI or HTTP/1.1 on port 7432
 elliottdb cli -c "CREATE TABLE users (id INT PRIMARY KEY AUTO_INCREMENT, name TEXT, score REAL)"
 curl -X POST http://127.0.0.1:7432/query -d "INSERT INTO users (name, score) VALUES ('Ada', 99.5)"
 curl -X POST http://127.0.0.1:7432/query -d "SELECT * FROM users WHERE id = 1"</code></pre>
@@ -105,36 +191,36 @@ curl -X POST http://127.0.0.1:7432/query -d "SELECT * FROM users WHERE id = 1"</
                 <td>Embedded <code>point</code></td>
                 <td>200,000 reqs, in-memory</td>
                 <td class="num">493,907 req/s</td>
-                <td class="num">6 us</td>
-                <td class="num">10 us</td>
-                <td class="num">76 us</td>
+                <td class="num">6 µs</td>
+                <td class="num">10 µs</td>
+                <td class="num">76 µs</td>
                 <td class="num">0</td>
               </tr>
               <tr>
                 <td>TCP IOCP <code>ping</code></td>
                 <td>200,000 reqs, 64 clients, pipeline 32</td>
                 <td class="num">466,944 req/s</td>
-                <td class="num">11 us</td>
-                <td class="num">26 us</td>
-                <td class="num">59 us</td>
+                <td class="num">11 µs</td>
+                <td class="num">26 µs</td>
+                <td class="num">59 µs</td>
                 <td class="num">0</td>
               </tr>
               <tr>
                 <td>TCP IOCP <code>read</code></td>
                 <td>100,000 reqs, 64 clients, pipeline 16</td>
                 <td class="num">171,326 req/s</td>
-                <td class="num">33 us</td>
-                <td class="num">91 us</td>
-                <td class="num">193 us</td>
+                <td class="num">33 µs</td>
+                <td class="num">91 µs</td>
+                <td class="num">193 µs</td>
                 <td class="num">0</td>
               </tr>
               <tr>
                 <td>TCP IOCP <code>mixed</code></td>
                 <td>50,000 reqs, 64 clients, pipeline 16</td>
                 <td class="num">112,176 req/s</td>
-                <td class="num">54 us</td>
-                <td class="num">140 us</td>
-                <td class="num">225 us</td>
+                <td class="num">54 µs</td>
+                <td class="num">140 µs</td>
+                <td class="num">225 µs</td>
                 <td class="num">0</td>
               </tr>
             </tbody>
@@ -146,7 +232,7 @@ curl -X POST http://127.0.0.1:7432/query -d "SELECT * FROM users WHERE id = 1"</
           <table>
             <thead><tr><th>Command</th><th>Behavior</th><th>Example</th></tr></thead>
             <tbody>
-              <tr><td><code>elliottdb [flags]</code></td><td>Start server (default mode)</td><td><code>elliottdb -p 7432 -d ./data --wal.sync_mode=normal</code></td></tr>
+              <tr><td><code>elliottdb [flags]</code></td><td>Start database server (default mode)</td><td><code>elliottdb -p 7432 -d ./data --wal.sync_mode=normal</code></td></tr>
               <tr><td><code>elliottdb cli</code></td><td>Interactive REPL or one-shot query over <code>EDB1</code></td><td><code>elliottdb cli -c "SHOW TABLES" -f json</code></td></tr>
               <tr><td><code>elliottdb bench</code></td><td>Multi-threaded TCP or <code>--embedded</code> benchmark</td><td><code>elliottdb bench --workload mixed -c 64 -t 8 -n 50000 --pipeline 16</code></td></tr>
               <tr><td><code>elliottdb init-config</code></td><td>Write commented 92-option <code>elliottdb.conf</code></td><td><code>elliottdb init-config elliottdb.conf</code></td></tr>
@@ -157,54 +243,54 @@ curl -X POST http://127.0.0.1:7432/query -d "SELECT * FROM users WHERE id = 1"</
 
       <section class="doc-section" id="architecture" data-title="Architecture" data-desc="Request path, reactor, sharded queues, caches, and storage engine">
         <h2>Architecture</h2>
-        <p>Every hot path is partitioned across independent lock stripes or 64-way shards so concurrent connections and queries execute in parallel without global lock contention.</p>
+        <p>Every hot path is partitioned across independent lock stripes or 64-way shards so concurrent connections and queries scale across CPU cores without global lock contention.</p>
 
         <div class="diagram-box">
           <svg viewBox="0 0 900 220" width="100%" height="auto" role="img" aria-label="ElliottDB Request and Storage Pipeline" style="font-family:var(--font-mono);font-size:11.5px">
             <defs>
               <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--accent)"/>
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="var(--ds-blue)"/>
               </marker>
             </defs>
 
-            <rect x="8" y="45" width="142" height="130" rx="3" fill="var(--bg)" stroke="var(--border-strong)"/>
-            <text x="79" y="70" fill="var(--text)" text-anchor="middle" font-weight="600">Clients (:7432)</text>
-            <text x="79" y="96" fill="var(--text-muted)" text-anchor="middle">Binary EDB1 (0x45)</text>
-            <text x="79" y="116" fill="var(--text-muted)" text-anchor="middle">HTTP/1.1 JSON</text>
-            <text x="79" y="136" fill="var(--text-muted)" text-anchor="middle">Text SQL Line</text>
-            <text x="79" y="158" fill="var(--text-dim)" text-anchor="middle">First-byte mux</text>
+            <rect x="8" y="45" width="142" height="130" rx="6" fill="var(--ds-bg-100)" stroke="var(--ds-border-strong)"/>
+            <text x="79" y="70" fill="var(--ds-text)" text-anchor="middle" font-weight="600">Clients (:7432)</text>
+            <text x="79" y="96" fill="var(--ds-text-muted)" text-anchor="middle">Binary EDB1 (0x45)</text>
+            <text x="79" y="116" fill="var(--ds-text-muted)" text-anchor="middle">HTTP/1.1 JSON</text>
+            <text x="79" y="136" fill="var(--ds-text-muted)" text-anchor="middle">Text SQL Line</text>
+            <text x="79" y="158" fill="var(--ds-text-dim)" text-anchor="middle">First-byte mux</text>
 
-            <rect x="190" y="30" width="180" height="160" rx="3" fill="var(--bg)" stroke="var(--border-strong)"/>
-            <text x="280" y="55" fill="var(--text)" text-anchor="middle" font-weight="600">I/O Reactor</text>
-            <text x="280" y="80" fill="var(--text-muted)" text-anchor="middle">Win: IOCP overlapped</text>
-            <text x="280" y="100" fill="var(--text-muted)" text-anchor="middle">Linux: epoll EPOLLET</text>
-            <text x="280" y="124" fill="var(--text-muted)" text-anchor="middle">Slab pool + atomic refcnt</text>
-            <text x="280" y="144" fill="var(--text-muted)" text-anchor="middle">tx_buf -&gt; tx_active swap</text>
-            <text x="280" y="168" fill="var(--text-dim)" text-anchor="middle">Lock-free RX/TX handoff</text>
+            <rect x="190" y="30" width="180" height="160" rx="6" fill="var(--ds-bg-100)" stroke="var(--ds-border-strong)"/>
+            <text x="280" y="55" fill="var(--ds-text)" text-anchor="middle" font-weight="600">I/O Reactor</text>
+            <text x="280" y="80" fill="var(--ds-text-muted)" text-anchor="middle">Win: IOCP overlapped</text>
+            <text x="280" y="100" fill="var(--ds-text-muted)" text-anchor="middle">Linux: epoll EPOLLET</text>
+            <text x="280" y="124" fill="var(--ds-text-muted)" text-anchor="middle">Slab pool + atomic refcnt</text>
+            <text x="280" y="144" fill="var(--ds-text-muted)" text-anchor="middle">tx_buf -&gt; tx_active swap</text>
+            <text x="280" y="168" fill="var(--ds-text-dim)" text-anchor="middle">Lock-free RX/TX handoff</text>
 
-            <rect x="410" y="30" width="205" height="160" rx="3" fill="var(--bg)" stroke="var(--border-strong)"/>
-            <text x="512" y="55" fill="var(--text)" text-anchor="middle" font-weight="600">Workers &amp; SQL Engine</text>
-            <text x="512" y="80" fill="var(--text-muted)" text-anchor="middle">Sharded work-stealing queues</text>
-            <text x="512" y="100" fill="var(--text-muted)" text-anchor="middle">Per-conn FIFO (worker_busy)</text>
-            <text x="512" y="124" fill="var(--text-muted)" text-anchor="middle">64-shard AST plan cache</text>
-            <text x="512" y="144" fill="var(--text-muted)" text-anchor="middle">64-shard versioned res cache</text>
-            <text x="512" y="168" fill="var(--text-dim)" text-anchor="middle">Hash join + index scan</text>
+            <rect x="410" y="30" width="205" height="160" rx="6" fill="var(--ds-bg-100)" stroke="var(--ds-border-strong)"/>
+            <text x="512" y="55" fill="var(--ds-text)" text-anchor="middle" font-weight="600">Workers &amp; SQL Engine</text>
+            <text x="512" y="80" fill="var(--ds-text-muted)" text-anchor="middle">Sharded work-stealing queues</text>
+            <text x="512" y="100" fill="var(--ds-text-muted)" text-anchor="middle">Per-conn FIFO (worker_busy)</text>
+            <text x="512" y="124" fill="var(--ds-text-muted)" text-anchor="middle">64-shard AST plan cache</text>
+            <text x="512" y="144" fill="var(--ds-text-muted)" text-anchor="middle">64-shard versioned res cache</text>
+            <text x="512" y="168" fill="var(--ds-text-dim)" text-anchor="middle">Hash join + index scan</text>
 
-            <rect x="655" y="16" width="235" height="188" rx="3" fill="var(--bg)" stroke="var(--border-strong)"/>
-            <text x="772" y="40" fill="var(--text)" text-anchor="middle" font-weight="600">Storage &amp; Durability</text>
-            <rect x="671" y="54" width="203" height="38" rx="2" fill="var(--surface)" stroke="var(--border)"/>
-            <text x="772" y="71" fill="var(--text)" text-anchor="middle">B+Tree &amp; Hash Indexes</text>
-            <text x="772" y="85" fill="var(--text-dim)" text-anchor="middle">Per-table RWLock + version</text>
-            <rect x="671" y="102" width="203" height="38" rx="2" fill="var(--surface)" stroke="var(--border)"/>
-            <text x="772" y="119" fill="var(--text)" text-anchor="middle">64-Shard Buffer Pool</text>
-            <text x="772" y="133" fill="var(--text-dim)" text-anchor="middle">Clock sweep · 8KB pages</text>
-            <rect x="671" y="150" width="203" height="38" rx="2" fill="var(--surface)" stroke="var(--border)"/>
-            <text x="772" y="167" fill="var(--text)" text-anchor="middle">WAL Group Commit</text>
-            <text x="772" y="181" fill="var(--text-dim)" text-anchor="middle">CRC32C · Undo rollback</text>
+            <rect x="655" y="16" width="235" height="188" rx="6" fill="var(--ds-bg-100)" stroke="var(--ds-border-strong)"/>
+            <text x="772" y="40" fill="var(--ds-text)" text-anchor="middle" font-weight="600">Storage &amp; Durability</text>
+            <rect x="671" y="54" width="203" height="38" rx="4" fill="var(--ds-bg-200)" stroke="var(--ds-border)"/>
+            <text x="772" y="71" fill="var(--ds-text)" text-anchor="middle">B+Tree &amp; Hash Indexes</text>
+            <text x="772" y="85" fill="var(--ds-text-dim)" text-anchor="middle">Per-table RWLock + version</text>
+            <rect x="671" y="102" width="203" height="38" rx="4" fill="var(--ds-bg-200)" stroke="var(--ds-border)"/>
+            <text x="772" y="119" fill="var(--ds-text)" text-anchor="middle">64-Shard Buffer Pool</text>
+            <text x="772" y="133" fill="var(--ds-text-dim)" text-anchor="middle">Clock sweep · 8KB pages</text>
+            <rect x="671" y="150" width="203" height="38" rx="4" fill="var(--ds-bg-200)" stroke="var(--ds-border)"/>
+            <text x="772" y="167" fill="var(--ds-text)" text-anchor="middle">WAL Group Commit</text>
+            <text x="772" y="181" fill="var(--ds-text-dim)" text-anchor="middle">CRC32C · Undo rollback</text>
 
-            <line x1="150" y1="110" x2="186" y2="110" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arr)"/>
-            <line x1="370" y1="110" x2="406" y2="110" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arr)"/>
-            <line x1="615" y1="110" x2="651" y2="110" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arr)"/>
+            <line x1="150" y1="110" x2="186" y2="110" stroke="var(--ds-blue)" stroke-width="1.5" marker-end="url(#arr)"/>
+            <line x1="370" y1="110" x2="406" y2="110" stroke="var(--ds-blue)" stroke-width="1.5" marker-end="url(#arr)"/>
+            <line x1="615" y1="110" x2="651" y2="110" stroke="var(--ds-blue)" stroke-width="1.5" marker-end="url(#arr)"/>
           </svg>
         </div>
 
@@ -225,7 +311,7 @@ curl -X POST http://127.0.0.1:7432/query -d "SELECT * FROM users WHERE id = 1"</
             <div class="spec-term">B+Tree &amp; Hash Indexes</div>
             <div class="spec-desc"><code>PRIMARY KEY</code> and <code>UNIQUE</code> columns auto-index. B+Tree leaves link doubly for range scans and use <code>(key, rid)</code> tie-breakers for non-unique keys; Hash indexes resize dynamically.</div>
           </div>
-          <div class="spec-row" id="concurrency" data-title="Reactor &amp; Workers" data-desc="IOCP double-buffered send, epoll EPOLLET, slab pool, work stealing">
+          <div class="spec-row" id="concurrency" data-title="IOCP / epoll &amp; Workers" data-desc="IOCP double-buffered send, epoll EPOLLET, slab pool, work stealing">
             <div class="spec-term">IOCP / epoll Reactor</div>
             <div class="spec-desc">Slab-allocated <code>edb_conn_t</code> slots track pending I/O and worker references atomically. Windows IOCP swaps <code>tx_buf</code> into <code>tx_active</code> when idle so an in-flight <code>WSASend</code> buffer is never reallocated.</div>
           </div>
@@ -240,8 +326,12 @@ curl -X POST http://127.0.0.1:7432/query -d "SELECT * FROM users WHERE id = 1"</
         <h2>SQL Dialect</h2>
         <p>Supported column types: <code>INT</code>, <code>REAL</code>, <code>TEXT</code>, <code>BOOL</code>, <code>BLOB</code>, <code>TIMESTAMP</code>. Single-table <code>SELECT</code>, <code>UPDATE</code>, and <code>DELETE</code> automatically use equality or range index scans when predicates match indexed columns.</p>
 
-        <div class="code-wrap">
-          <pre><code>-- DDL &amp; Indexes
+        <div class="code-window">
+          <div class="code-head">
+            <span class="code-title">schema-and-queries.sql</span>
+            <button class="icon-copy-btn" type="button" data-copy-code>Copy</button>
+          </div>
+          <pre><code data-lang="sql">-- DDL &amp; Indexes
 CREATE TABLE IF NOT EXISTS users (
   id INT PRIMARY KEY AUTO_INCREMENT,
   email TEXT UNIQUE NOT NULL,
@@ -291,24 +381,27 @@ CHECKPOINT;</code></pre>
 
       <section class="doc-section" id="protocols" data-title="Wire Protocols &amp; HTTP" data-desc="Multiplexed EDB1 binary framing, HTTP/1.1 JSON endpoints, Text SQL">
         <h2>Wire Protocols &amp; HTTP API</h2>
-        <p>A single TCP port (default <code>7432</code>) multiplexes all three protocols by inspecting the first bytes of each connection: <code>0x45</code> selects Binary <code>EDB1</code>, HTTP method prefixes select HTTP/1.1 JSON, and any other ASCII selects Text Line SQL.</p>
+        <p>Port <code>7432</code> multiplexes all three protocols by inspecting the first bytes of each connection: <code>0x45</code> selects Binary <code>EDB1</code>, HTTP verbs select HTTP/1.1 JSON, and any other ASCII selects Text Line SQL.</p>
 
         <div class="tabs">
           <div class="tab-bar">
-            <button class="tab-btn active" type="button">HTTP/JSON (curl)</button>
-            <button class="tab-btn" type="button">Binary EDB1 (Python)</button>
-            <button class="tab-btn" type="button">CLI</button>
-            <button class="tab-btn" type="button">Text Line TCP</button>
+            <div class="tab-list" role="tablist" aria-label="Protocol examples">
+              <button class="tab-btn" type="button" role="tab" aria-selected="true" aria-controls="panel-http" id="tab-http">HTTP / curl</button>
+              <button class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="panel-bin" id="tab-bin">Binary EDB1</button>
+              <button class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="panel-cli" id="tab-cli">CLI</button>
+              <button class="tab-btn" type="button" role="tab" aria-selected="false" aria-controls="panel-txt" id="tab-txt">Text Line TCP</button>
+            </div>
+            <button class="icon-copy-btn" type="button" data-copy-active-tab>Copy</button>
           </div>
-          <div class="tab-panel active">
-            <pre><code>curl http://127.0.0.1:7432/health
+          <div class="tab-panel active" role="tabpanel" id="panel-http" aria-labelledby="tab-http">
+            <pre><code data-lang="bash">curl http://127.0.0.1:7432/health
 curl http://127.0.0.1:7432/metrics
 curl http://127.0.0.1:7432/config
 curl -X POST http://127.0.0.1:7432/query -d "SELECT 1 + 1 AS sum"
 curl -X POST http://127.0.0.1:7432/batch -d "CREATE TABLE t(id INT PRIMARY KEY); INSERT INTO t VALUES (1); SELECT * FROM t"</code></pre>
           </div>
-          <div class="tab-panel">
-            <pre><code>import socket, struct
+          <div class="tab-panel" role="tabpanel" id="panel-bin" aria-labelledby="tab-bin">
+            <pre><code data-lang="python">import socket, struct
 
 def send_query(sock, sql: str):
     payload = sql.encode("utf-8")
@@ -320,19 +413,23 @@ def send_query(sock, sql: str):
         body.extend(sock.recv(rlen - len(body)))
     return status, flags, bytes(body)</code></pre>
           </div>
-          <div class="tab-panel">
-            <pre><code>elliottdb cli -H 127.0.0.1 -p 7432
+          <div class="tab-panel" role="tabpanel" id="panel-cli" aria-labelledby="tab-cli">
+            <pre><code data-lang="bash">elliottdb cli -H 127.0.0.1 -p 7432
 elliottdb cli -c "SELECT * FROM users" -f table
 elliottdb cli -c "SELECT * FROM users" -f json
 elliottdb cli -c "SELECT * FROM users" -f csv</code></pre>
           </div>
-          <div class="tab-panel">
-            <pre><code>printf "CREATE TABLE k(id INT PRIMARY KEY)\nINSERT INTO k VALUES (42)\nSELECT * FROM k\nQUIT\n" | nc 127.0.0.1 7432</code></pre>
+          <div class="tab-panel" role="tabpanel" id="panel-txt" aria-labelledby="tab-txt">
+            <pre><code data-lang="bash">printf "CREATE TABLE k(id INT PRIMARY KEY)\nINSERT INTO k VALUES (42)\nSELECT * FROM k\nQUIT\n" | nc 127.0.0.1 7432</code></pre>
           </div>
         </div>
 
         <h3>Binary Protocol (<code>EDB1</code>) 8-Byte Header</h3>
-        <div class="code-wrap">
+        <div class="code-window">
+          <div class="code-head">
+            <span class="code-title">edb1-wire-frame.txt</span>
+            <button class="icon-copy-btn" type="button" data-copy-code>Copy</button>
+          </div>
           <pre><code> 0               1               2               3               4..7
 +---------------+---------------+-------------------------------+-------------------------------+
 | magic (0x45)  | op / status   | flags (uint16 little-endian)  | payload_len (uint32 LE)       |
@@ -340,32 +437,38 @@ elliottdb cli -c "SELECT * FROM users" -f csv</code></pre>
 Req  magic=0x45 ('E') | op: 1=PING, 2=QUERY, 3=BATCH, 4=AUTH, 5=PREPARE, 6=EXEC
 Resp magic=0x52 ('R') | status: 0=OK..12=INTERNAL | flags: bit0=is_select, bit1=from_cache</code></pre>
         </div>
-        <p>HTTP API schema: <a href="api/openapi.json"><code>api/openapi.json</code></a> (OpenAPI 3.1.0).</p>
+        <p>HTTP API specification: <a href="api/openapi.json"><code>api/openapi.json</code></a> (OpenAPI 3.1.0).</p>
       </section>
 
-      <section class="doc-section" id="config" data-title="Configuration (92)" data-desc="Interactive configuration table, presets, and elliottdb.conf generator">
+      <section class="doc-section" id="config" data-title="Configuration (92)" data-desc="Interactive 92-option workbench, presets, and elliottdb.conf generator">
         <h2>Configuration Reference (92 Parameters)</h2>
         <p>Precedence (lowest to highest): built-in defaults &rarr; <code>elliottdb.conf</code> (<code>-c</code>) &rarr; <code>ELLIOTTDB_&lt;SECTION&gt;_&lt;KEY&gt;</code> env vars &rarr; <code>--section.key=val</code> CLI flags &rarr; runtime SQL <code>SET</code>.</p>
 
-        <div class="preset-bar">
-          <button class="filter-btn" type="button" data-preset="default">defaults</button>
-          <button class="filter-btn" type="button" data-preset="memory">in-memory</button>
-          <button class="filter-btn" type="button" data-preset="balanced">balanced</button>
-          <button class="filter-btn" type="button" data-preset="strict">strict-acid</button>
-          <button class="filter-btn" type="button" data-preset="gateway">high-concurrency</button>
+        <div class="cfg-workbench-bar">
+          <div class="segmented-group" role="group" aria-label="Configuration presets">
+            <button class="seg-btn active" type="button" data-preset="default">Defaults</button>
+            <button class="seg-btn" type="button" data-preset="memory">In-Memory</button>
+            <button class="seg-btn" type="button" data-preset="balanced">Balanced</button>
+            <button class="seg-btn" type="button" data-preset="strict">Strict ACID</button>
+            <button class="seg-btn" type="button" data-preset="gateway">High Concurrency</button>
+          </div>
+          <span class="override-pill" id="overrideBadge">0 overrides</span>
         </div>
 
         <div class="cfg-controls">
-          <input class="cfg-input" id="cfgSearch" type="search" placeholder="Filter by key, env var, or description...">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <div class="cfg-input-wrap">
+            <input class="cfg-input" id="cfgSearch" type="search" placeholder="Filter by key, env var, or description…" aria-label="Filter configuration parameters">
+            <button class="cfg-clear-btn" id="cfgClearBtn" type="button" aria-label="Clear search">&times;</button>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ds-text-muted);cursor:pointer">
             <input type="checkbox" id="cfgMutableOnly"> Runtime <code>SET</code> only
           </label>
-          <span id="cfgCount" style="font-size:12.5px;color:var(--text-dim);font-family:var(--font-mono)"></span>
+          <span id="cfgCount" style="font-size:12.5px;color:var(--ds-text-dim);font-family:var(--font-mono)"></span>
         </div>
 
-        <div class="cfg-pills" id="cfgPills"></div>
+        <div class="cfg-pills" id="cfgPills" role="group" aria-label="Configuration sections"></div>
 
-        <div class="table-wrap" style="max-height:460px;overflow-y:auto">
+        <div class="table-wrap cfg-table-scroll">
           <table>
             <thead>
               <tr><th>Key / Env Var</th><th>Value</th><th>Range</th><th>Mode</th><th>Description</th></tr>
@@ -375,19 +478,34 @@ Resp magic=0x52 ('R') | status: 0=OK..12=INTERNAL | flags: bit0=is_select, bit1=
         </div>
 
         <h3>Generated <code>elliottdb.conf</code> &amp; CLI Flags</h3>
-        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-          <button class="btn" id="copyConfBtn" type="button">Copy INI</button>
-          <button class="btn" id="downloadConfBtn" type="button">Download elliottdb.conf</button>
-          <button class="btn" id="copyCliBtn" type="button">Copy CLI</button>
+        <div class="code-window">
+          <div class="code-head">
+            <span class="code-title">elliottdb.conf</span>
+            <div style="display:flex;gap:6px">
+              <button class="icon-copy-btn" id="copyConfBtn" type="button">Copy INI</button>
+              <button class="icon-copy-btn" id="downloadConfBtn" type="button">Download</button>
+            </div>
+          </div>
+          <pre><code id="cfgPreview" data-lang="ini"></code></pre>
         </div>
-        <div class="code-wrap"><pre><code id="cfgPreview"></code></pre></div>
-        <div class="code-wrap"><pre><code id="cfgCliPreview"></code></pre></div>
+
+        <div class="code-window">
+          <div class="code-head">
+            <span class="code-title">cli-overrides.sh</span>
+            <button class="icon-copy-btn" id="copyCliBtn" type="button">Copy CLI</button>
+          </div>
+          <pre><code id="cfgCliPreview" data-lang="bash"></code></pre>
+        </div>
       </section>
 
       <section class="doc-section" id="operations" data-title="Build &amp; Durability" data-desc="Windows/Linux single-binary builds, test suite, and WAL sync modes">
         <h2>Build &amp; Durability</h2>
-        <div class="code-wrap">
-          <pre><code>:: Windows static single binary (MSVC /std:c11 /O2 /MT /W4)
+        <div class="code-window">
+          <div class="code-head">
+            <span class="code-title">build-and-verify.sh</span>
+            <button class="icon-copy-btn" type="button" data-copy-code>Copy</button>
+          </div>
+          <pre><code data-lang="bash"># Windows static single binary (MSVC /std:c11 /O2 /MT /W4)
 build.bat
 dumpbin /dependents build\elliottdb.exe   # WS2_32.dll + KERNEL32.dll only
 
@@ -399,49 +517,124 @@ cmake -B build_cmake -G Ninja &amp;&amp; cmake --build build_cmake
 python tests/test_suite.py</code></pre>
         </div>
         <div class="callout">
-          <strong>WAL Sync Modes (<code>wal.sync_mode</code>):</strong> <code>normal</code> (default) writes to OS page cache immediately and syncs on checkpoint; <code>full</code> coalesces concurrent commits into one <code>FlushFileBuffers</code>/<code>fdatasync</code>; <code>off</code> or <code>--memory</code> disables disk flushing for ephemeral workloads.
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="flex-shrink:0;margin-top:3px;color:var(--ds-amber)">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M8 5v3.5M8 10.8v.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <div>
+            <strong>WAL Sync Modes (<code>wal.sync_mode</code>):</strong> <code>normal</code> (default) writes to OS page cache immediately and syncs on checkpoint; <code>full</code> coalesces concurrent commits into one <code>FlushFileBuffers</code>/<code>fdatasync</code>; <code>off</code> or <code>--memory</code> disables disk flushing for ephemeral workloads.
+          </div>
         </div>
       </section>
 
-      <section class="doc-section" id="agents" data-title="Agent Artifacts" data-desc="llms.txt, llms-lite.txt, config-schema.json, openapi.json">
-        <h2>Machine-Readable &amp; AI Agent Artifacts</h2>
-        <p>All documentation specs, engineering invariants, SQL syntax, and configuration metadata are published as Markdown and JSON directly alongside this manual.</p>
+      <section class="doc-section" id="agents" data-title="llms.txt &amp; JSON Schemas" data-desc="llms.txt, llms-lite.txt, config-schema.json, openapi.json">
+        <h2>LLM &amp; Machine-Readable Artifacts</h2>
+        <p>Complete engineering specifications, SQL syntax, concurrency invariants, and configuration schemas are published in Markdown and JSON directly alongside this documentation.</p>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Artifact</th><th>Format</th><th>Contents</th></tr></thead>
+            <thead><tr><th>Artifact</th><th>Format</th><th>Contents</th><th class="num">Action</th></tr></thead>
             <tbody>
-              <tr><td><a href="llms.txt"><code>llms.txt</code></a></td><td>Markdown</td><td>Complete reference: codebase map, portability &amp; concurrency invariants, wire protocols, SQL dialect, all 92 config options, and build/test commands.</td></tr>
-              <tr><td><a href="llms-lite.txt"><code>llms-lite.txt</code></a></td><td>Markdown</td><td>Compact, ultra-dense engineering spec (~70 lines) for minimal-token agent system prompts.</td></tr>
-              <tr><td><a href="api/config-schema.json"><code>api/config-schema.json</code></a></td><td>JSON</td><td>Parsed schema of all 92 options from <code>src/config.c</code> (types, defaults, bounds, env vars, CLI flags).</td></tr>
-              <tr><td><a href="api/openapi.json"><code>api/openapi.json</code></a></td><td>OpenAPI 3.1</td><td>HTTP/1.1 JSON API specification (<code>/health</code>, <code>/metrics</code>, <code>/config</code>, <code>/query</code>, <code>/batch</code>).</td></tr>
+              <tr>
+                <td><a href="llms.txt"><code>llms.txt</code></a></td>
+                <td>Markdown</td>
+                <td>Complete reference: codebase map, portability &amp; concurrency invariants, wire protocols, SQL dialect, all 92 config options, and build/test commands.</td>
+                <td class="num"><button class="icon-copy-btn" type="button" data-copy-url="llms.txt">Copy URL</button></td>
+              </tr>
+              <tr>
+                <td><a href="llms-lite.txt"><code>llms-lite.txt</code></a></td>
+                <td>Markdown</td>
+                <td>Compact, ultra-dense engineering spec (~48 lines) for minimal-token context windows.</td>
+                <td class="num"><button class="icon-copy-btn" type="button" data-copy-url="llms-lite.txt">Copy URL</button></td>
+              </tr>
+              <tr>
+                <td><a href="api/config-schema.json"><code>api/config-schema.json</code></a></td>
+                <td>JSON</td>
+                <td>Parsed schema of all 92 options from <code>src/config.c</code> (types, defaults, bounds, env vars, CLI flags).</td>
+                <td class="num"><button class="icon-copy-btn" type="button" data-copy-url="api/config-schema.json">Copy URL</button></td>
+              </tr>
+              <tr>
+                <td><a href="api/openapi.json"><code>api/openapi.json</code></a></td>
+                <td>OpenAPI 3.1</td>
+                <td>HTTP/1.1 JSON API specification (<code>/health</code>, <code>/metrics</code>, <code>/config</code>, <code>/query</code>, <code>/batch</code>).</td>
+                <td class="num"><button class="icon-copy-btn" type="button" data-copy-url="api/openapi.json">Copy URL</button></td>
+              </tr>
             </tbody>
           </table>
         </div>
       </section>
     </main>
 
-    <aside class="toc-right" aria-label="On This Page">
-      <h4>On This Page</h4>
-      <a href="#overview">Overview</a>
-      <a href="#benchmarks">Benchmarks</a>
-      <a href="#subcommands">Subcommands</a>
-      <a href="#architecture">Architecture</a>
-      <a href="#storage-engine">Storage &amp; WAL</a>
-      <a href="#sql">SQL Dialect</a>
-      <a href="#protocols">Wire Protocols</a>
-      <a href="#config">Config (92)</a>
-      <a href="#operations">Build &amp; Durability</a>
-      <a href="#agents">Agent Artifacts</a>
+    <aside class="toc-right" aria-label="On this page">
+      <div class="toc-title">On this page</div>
+      <div class="toc-list">
+        <a href="#overview">Introduction</a>
+        <a href="#benchmarks">Benchmarks</a>
+        <a href="#subcommands">Subcommands</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#storage-engine">Storage &amp; WAL</a>
+        <a href="#sql">SQL Dialect</a>
+        <a href="#protocols">Wire Protocols</a>
+        <a href="#config">Configuration (92)</a>
+        <a href="#operations">Build &amp; Durability</a>
+        <a href="#agents">llms.txt &amp; Schemas</a>
+      </div>
+      <div class="toc-divider"></div>
+      <div class="toc-meta-links">
+        <a href="llms.txt">Read llms.txt &rarr;</a>
+        <a href="llms-lite.txt">Read llms-lite.txt &rarr;</a>
+        <a href="https://github.com/elliott964/ElliottDB" target="_blank" rel="noopener">GitHub Repository &rarr;</a>
+      </div>
     </aside>
   </div>
 
-  <div class="modal-backdrop" id="searchModal" role="dialog" aria-modal="true" aria-label="Search Documentation">
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div style="display:flex;align-items:center;gap:10px">
+        <strong>ElliottDB</strong>
+        <span style="font-family:var(--font-mono);font-size:12px">v1.0.0</span>
+        <span>·</span>
+        <span>Portable C11 RDBMS</span>
+      </div>
+      <div class="footer-links">
+        <a href="llms.txt">llms.txt</a>
+        <a href="llms-lite.txt">llms-lite.txt</a>
+        <a href="api/config-schema.json">config-schema.json</a>
+        <a href="api/openapi.json">openapi.json</a>
+        <a href="https://github.com/elliott964/ElliottDB" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <div class="theme-switcher" role="group" aria-label="Footer color theme">
+        <button class="theme-btn" type="button" data-theme-choice="system" aria-label="System theme" aria-pressed="true" title="System theme">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="2" y="2.5" width="12" height="8.5" rx="1.2" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M5.5 13.5h5M8 11v2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="theme-btn" type="button" data-theme-choice="light" aria-label="Light theme" aria-pressed="false" title="Light theme">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M12.6 3.4l-1.1 1.1M4.5 11.5l-1.1 1.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <button class="theme-btn" type="button" data-theme-choice="dark" aria-label="Dark theme" aria-pressed="false" title="Dark theme">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M13.2 10.2A5.5 5.5 0 0 1 5.8 2.8a5.5 5.5 0 1 0 7.4 7.4Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <div class="modal-backdrop" id="searchModal" role="dialog" aria-modal="true" aria-label="Command menu">
     <div class="modal">
       <div class="modal-head">
-        <input id="modalSearchInput" type="text" placeholder="Search sections, SQL, or any of 92 config keys...">
-        <span class="kbd">ESC</span>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="color:var(--ds-text-muted);flex-shrink:0">
+          <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <input id="modalSearchInput" type="text" placeholder="Search documentation, SQL, or any of 92 config keys…" autocomplete="off">
+        <kbd class="kbd">ESC</kbd>
       </div>
-      <div class="modal-results" id="modalSearchResults"></div>
+      <div class="modal-results" id="modalSearchResults" role="listbox" aria-label="Search results"></div>
     </div>
   </div>
 
