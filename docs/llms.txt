@@ -1,0 +1,13 @@
+# ElliottDB
+
+> Zero-dependency, single-binary, high-concurrency relational database in C11 for Linux and Windows. Multiplexes Binary (`EDB1`), HTTP/1.1 JSON, and Text SQL on port `7432` with auto-tuned defaults.
+
+## Agent & Machine-Readable Entry Points
+- [Compact Agent Spec (AGENTS-LITE.md)](agents-lite.md): Ultra-dense, token-minimal engineering & protocol spec for system prompts.
+- [Full Agent Handbook (AGENTS.md)](agents.md): Complete codebase map, concurrency/memory invariants, wire formats, SQL dialect, and build/test commands.
+- [Complete Plaintext Bundle (llms-full.txt)](llms-full.txt): Single-file documentation + SQL + wire protocol + all 92 configuration parameters.
+- [Config JSON Schema (api/config-schema.json)](api/config-schema.json): Structured JSON schema of all 92 configuration options, defaults, ranges, env vars, and CLI flags.
+- [HTTP OpenAPI 3.1 Spec (api/openapi.json)](api/openapi.json): OpenAPI specification for `/health`, `/metrics`, `/config`, `/query`, and `/batch`.
+
+## Human Documentation
+- [Interactive Documentation Portal](index.html): Architecture diagram, SQL guide, tabbed protocol examples, interactive 92-option Config Explorer, and `Ctrl+K` instant search.

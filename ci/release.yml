@@ -1,0 +1,35 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build static Linux binary
+        run: |
+          chmod +x build.sh
+          ./build.sh --static
+          mv build/elliottdb elliottdb-linux-x86_64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elliottdb-linux-x86_64
+          path: elliottdb-linux-x86_64
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build static Windows executable
+        run: |
+          .\build.bat
+          copy build\elliottdb.exe elliottdb-windows-x86_64.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elliottdb-windows-x86_64.exe
+          path: elliottdb-windows-x86_64.exe

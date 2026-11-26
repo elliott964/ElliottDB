@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ElliottDB v1.0.0 — Zero-Dependency High-Concurrency C11 Relational Database</title>
+  <meta name="description" content="Single-binary C11 relational database for Linux and Windows with IOCP/epoll, sharded buffer pool, B+Tree/Hash indexes, WAL group commit, and multiplexed Binary/HTTP/Text protocols.">
+  <link rel="alternate" type="text/plain" title="AI Agent Directory (llms.txt)" href="llms.txt">
+  <link rel="alternate" type="text/plain" title="Full Agent Knowledge Base (llms-full.txt)" href="llms-full.txt">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="nav-pill menu-btn" id="menuToggle" type="button" aria-label="Toggle Menu">Menu</button>
+      <a class="brand" href="#overview">
+        <span class="brand-logo">EDB</span>
+        <span>ElliottDB</span>
+        <span class="badge">v1.0.0</span>
+      </a>
+    </div>
+
+    <div class="topbar-center">
+      <button class="search-trigger" id="openSearchBtn" type="button">
+        <span>Search docs, SQL, 92 config keys...</span>
+        <span class="kbd">Ctrl+K</span>
+      </button>
+    </div>
+
+    <nav class="topbar-actions">
+      <a class="nav-pill accent" href="#agents">For Agents (<code>llms.txt</code>)</a>
+      <a class="nav-pill hide-sm" href="https://github.com/elliott964/ElliottDB" target="_blank" rel="noopener">GitHub</a>
+      <button class="nav-pill" id="themeToggle" type="button">Light</button>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-group">
+        <div class="sidebar-title">Getting Started</div>
+        <a href="#overview">Overview &amp; Quickstart</a>
+        <a href="#benchmarks">Verified Benchmarks</a>
+        <a href="#subcommands">CLI &amp; Subcommands</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-title">Internals</div>
+        <a href="#architecture">Architecture Diagram</a>
+        <a href="#storage-engine">Buffer Pool, WAL &amp; Indexes</a>
+        <a href="#concurrency">IOCP / epoll &amp; Workers</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-title">Developers</div>
+        <a href="#sql">SQL Dialect Reference</a>
+        <a href="#protocols">Binary, HTTP &amp; Text APIs</a>
+        <a href="#config">92-Option Config Explorer</a>
+      </div>
+      <div class="sidebar-group">
+        <div class="sidebar-title">Operations &amp; AI</div>
+        <a href="#operations">Building &amp; Tuning</a>
+        <a href="#agents">AI Agents &amp; Schemas</a>
+      </div>
+    </aside>
+
+    <main class="content">
+      <section class="doc-section" id="overview" data-title="Overview &amp; Quickstart" data-desc="Zero-config startup, single binary, and core capabilities">
+        <div class="hero">
+          <div style="margin-bottom:10px"><span class="badge">Pure C11 · Single Binary · Zero Dependencies</span></div>
+          <h1>ElliottDB</h1>
+          <p class="hero-sub">
+            An ultra-fast, single-executable relational database for <strong>Windows</strong> (<code>elliottdb.exe</code>, 373 KB static) and <strong>Linux</strong> (<code>elliottdb</code>). No Docker, no runtime DLLs, no external libraries—just launch one binary and connect over Binary <code>EDB1</code>, HTTP/1.1 JSON, or Text SQL on port <code>7432</code>.
+          </p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="#protocols">Try API &amp; SQL</a>
+            <a class="btn" href="#config">Explore 92 Config Options</a>
+            <a class="btn" href="llms.txt">Read llms.txt</a>
+          </div>
+        </div>
+
+        <h3 id="benchmarks" data-title="Verified Benchmarks" data-desc="Observed throughput and microsecond latency percentiles">Verified Windows Benchmarks (MSVC <code>/O2 /MT</code>, 8 Threads)</h3>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-val">493,907/s</div>
+            <div class="stat-label">Embedded Point Select</div>
+            <div class="stat-sub">p50 6us · p99 76us · 0 err</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val">466,944/s</div>
+            <div class="stat-label">TCP IOCP Ping (Pipeline 32)</div>
+            <div class="stat-sub">p50 11us · p99 59us · 0 err</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val">171,326/s</div>
+            <div class="stat-label">TCP IOCP Read (64 Clients)</div>
+            <div class="stat-sub">p50 33us · p99 193us · 0 err</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val">112,176/s</div>
+            <div class="stat-label">TCP IOCP Mixed R/W (64 Clients)</div>
+            <div class="stat-sub">p50 54us · p99 225us · 0 err</div>
+          </div>
+        </div>
+
+        <div class="code-wrap">
+          <pre><code># 1. Start server with zero config (auto-tunes CPU threads &amp; RAM buffer pool)
+./elliottdb                # Linux
+elliottdb.exe              # Windows
+
+# 2. Run SQL directly via CLI or HTTP on port 7432
+elliottdb cli -c "CREATE TABLE users (id INT PRIMARY KEY AUTO_INCREMENT, name TEXT, score REAL)"
+curl -X POST http://127.0.0.1:7432/query -d "INSERT INTO users (name, score) VALUES ('Ada', 99.5)"
+curl -X POST http://127.0.0.1:7432/query -d "SELECT * FROM users WHERE id = 1"</code></pre>
+        </div>
+
+        <h3 id="subcommands" data-title="CLI &amp; Subcommands" data-desc="server, cli, bench, init-config, version, help">Subcommands</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Command</th><th>Purpose</th><th>Example</th></tr></thead>
+            <tbody>
+              <tr><td><code>elliottdb [flags]</code></td><td>Start database server (default mode)</td><td><code>elliottdb -p 7432 -d ./data --wal.sync_mode=normal</code></td></tr>
+              <tr><td><code>elliottdb cli</code></td><td>Interactive SQL REPL or one-shot query over <code>EDB1</code></td><td><code>elliottdb cli -c "SHOW TABLES" -f json</code></td></tr>
+              <tr><td><code>elliottdb bench</code></td><td>Built-in multi-threaded TCP or embedded benchmark</td><td><code>elliottdb bench --workload mixed -c 64 -t 8 -n 50000 --pipeline 16</code></td></tr>
+              <tr><td><code>elliottdb init-config</code></td><td>Generate fully commented 92-key <code>elliottdb.conf</code></td><td><code>elliottdb init-config elliottdb.conf</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="doc-section" id="architecture" data-title="Architecture &amp; Internals" data-desc="IOCP/epoll reactor, sharded workers, buffer pool, WAL, indexes">
+        <h2>Architecture &amp; Internals</h2>
+        <p>Every subsystem in ElliottDB is partitioned into lock-striped shards so concurrent reads, writes, and network connections scale linearly across CPU cores without global bottlenecks.</p>
+
+        <div class="diagram-box">
+          <svg viewBox="0 0 920 260" width="100%" height="auto" role="img" aria-label="ElliottDB Architecture Diagram" style="font-family:var(--font-mono);font-size:12px">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8"/>
+              </marker>
+            </defs>
+            <rect x="10" y="75" width="145" height="110" rx="8" fill="#151e2e" stroke="#32435e"/>
+            <text x="82" y="102" fill="#e6edf7" text-anchor="middle" font-weight="700">Clients</text>
+            <text x="82" y="124" fill="#93a4be" text-anchor="middle">Binary EDB1</text>
+            <text x="82" y="143" fill="#93a4be" text-anchor="middle">HTTP/1.1 JSON</text>
+            <text x="82" y="162" fill="#93a4be" text-anchor="middle">Text SQL (:7432)</text>
+
+            <rect x="195" y="55" width="175" height="150" rx="8" fill="#151e2e" stroke="#0ea5e9"/>
+            <text x="282" y="84" fill="#38bdf8" text-anchor="middle" font-weight="700">I/O Reactor</text>
+            <text x="282" y="108" fill="#e6edf7" text-anchor="middle">Win: IOCP Overlap</text>
+            <text x="282" y="128" fill="#e6edf7" text-anchor="middle">Linux: epoll EPOLLET</text>
+            <text x="282" y="150" fill="#93a4be" text-anchor="middle">Slab Conn Pool (refcnt)</text>
+            <text x="282" y="170" fill="#93a4be" text-anchor="middle">Double-Buf tx_active</text>
+            <text x="282" y="190" fill="#34d399" text-anchor="middle">Auto-Detect Protocol</text>
+
+            <rect x="410" y="55" width="205" height="150" rx="8" fill="#151e2e" stroke="#a78bfa"/>
+            <text x="512" y="84" fill="#a78bfa" text-anchor="middle" font-weight="700">SQL &amp; Worker Pool</text>
+            <text x="512" y="108" fill="#e6edf7" text-anchor="middle">Sharded Work-Stealing Q</text>
+            <text x="512" y="128" fill="#e6edf7" text-anchor="middle">Per-Conn FIFO Pipeline</text>
+            <text x="512" y="150" fill="#93a4be" text-anchor="middle">64-Shard Plan Cache</text>
+            <text x="512" y="170" fill="#93a4be" text-anchor="middle">64-Shard Version Cache</text>
+            <text x="512" y="190" fill="#fbbf24" text-anchor="middle">Hash Join / Index Scan</text>
+
+            <rect x="655" y="20" width="250" height="220" rx="8" fill="#151e2e" stroke="#34d399"/>
+            <text x="780" y="48" fill="#34d399" text-anchor="middle" font-weight="700">Storage &amp; Durability</text>
+            <rect x="673" y="64" width="214" height="44" rx="6" fill="#0b0f17" stroke="#222e42"/>
+            <text x="780" y="84" fill="#e6edf7" text-anchor="middle">B+Tree &amp; Hash Indexes</text>
+            <text x="780" y="100" fill="#93a4be" text-anchor="middle">Per-Table RWLock + Version</text>
+            <rect x="673" y="120" width="214" height="44" rx="6" fill="#0b0f17" stroke="#222e42"/>
+            <text x="780" y="140" fill="#e6edf7" text-anchor="middle">64-Shard Buffer Pool</text>
+            <text x="780" y="156" fill="#93a4be" text-anchor="middle">Clock Sweep · 8KB Slotted Pages</text>
+            <rect x="673" y="176" width="214" height="44" rx="6" fill="#0b0f17" stroke="#222e42"/>
+            <text x="780" y="196" fill="#e6edf7" text-anchor="middle">WAL Group Commit</text>
+            <text x="780" y="212" fill="#93a4be" text-anchor="middle">CRC32C · Undo Txn Rollback</text>
+
+            <line x1="155" y1="130" x2="191" y2="130" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)"/>
+            <line x1="370" y1="130" x2="406" y2="130" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)"/>
+            <line x1="615" y1="130" x2="651" y2="130" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)"/>
+          </svg>
+        </div>
+
+        <div class="card-grid" id="storage-engine" data-title="Buffer Pool, WAL &amp; Indexes" data-desc="Clock sweep, CRC32C group commit, B+Tree and Hash indexes">
+          <div class="card">
+            <h4>64-Shard Buffer Pool</h4>
+            <p>Pages (default <code>8192</code> B) map to 64 independent clock-sweep shards. Packed <code>rid = (page_id &lt;&lt; 16) | slot_idx</code> delivers O(1) row fetches; <code>--memory</code> skips disk completely.</p>
+          </div>
+          <div class="card">
+            <h4>WAL Group Commit</h4>
+            <p>CRC32C-checksummed records append to <code>elliottdb.wal</code>. Under <code>full</code> sync mode, concurrent writers coalesce into a single <code>FlushFileBuffers</code>/<code>fdatasync</code>. Crash recovery ignores uncommitted transactions.</p>
+          </div>
+          <div class="card" id="concurrency" data-title="IOCP / epoll &amp; Workers" data-desc="Slab connection pool, double-buffered send, work stealing">
+            <h4>Zero-Stall I/O &amp; Workers</h4>
+            <p>Connections come from dynamically growing slab chunks with atomic refcounts. IOCP swaps <code>tx_buf</code> into <code>tx_active</code> so overlapped sends never see a reallocated buffer.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="doc-section" id="sql" data-title="SQL Dialect Reference" data-desc="DDL, DML, Joins, Aggregates, Transactions, Prepared Statements, Admin">
+        <h2>SQL Dialect Reference</h2>
+        <p>ElliottDB supports typed tables (<code>INT</code>, <code>REAL</code>, <code>TEXT</code>, <code>BOOL</code>, <code>BLOB</code>, <code>TIMESTAMP</code>), primary keys, auto-increment, constraints, joins, aggregations, transactions, and prepared statements.</p>
+
+        <div class="code-wrap">
+          <pre><code>-- DDL &amp; Indexes (PRIMARY KEY &amp; UNIQUE auto-create B+Tree/Hash indexes)
+CREATE TABLE IF NOT EXISTS users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  dept_id INT DEFAULT 0,
+  salary REAL
+);
+CREATE INDEX idx_users_dept ON users (dept_id) USING HASH;
+CREATE INDEX idx_users_sal  ON users (salary)  USING BTREE;
+ALTER TABLE users ADD COLUMN active BOOL DEFAULT TRUE;
+
+-- Multi-row INSERT, UPDATE, DELETE
+INSERT INTO users (email, dept_id, salary) VALUES
+  ('ada@edb.dev', 10, 180.0),
+  ('linus@edb.dev', 10, 175.0);
+UPDATE users SET salary = salary * 1.05 WHERE dept_id = 10;
+DELETE FROM users WHERE active = FALSE;
+
+-- Hash Joins, Aggregates, GROUP BY, HAVING, ORDER BY aliases, LIMIT/OFFSET
+SELECT d.name, COUNT(*) AS headcount, AVG(u.salary) AS avg_sal
+FROM users u
+INNER JOIN depts d ON u.dept_id = d.id
+WHERE u.salary BETWEEN 100.0 AND 250.0
+GROUP BY d.name
+HAVING COUNT(*) &gt;= 1
+ORDER BY avg_sal DESC
+LIMIT 20 OFFSET 0;
+
+-- Transactions &amp; Prepared Statements
+BEGIN;
+INSERT INTO users (email, dept_id, salary) VALUES ('temp@edb.dev', 1, 50.0);
+ROLLBACK;
+
+PREPARE find_user AS SELECT id, email FROM users WHERE id = $1;
+EXECUTE find_user(1);
+DEALLOCATE find_user;
+
+-- Introspection &amp; Live Operations
+EXPLAIN SELECT * FROM users WHERE id = 1;
+SHOW TABLES;
+DESCRIBE users;
+SHOW CONFIG LIKE 'wal.%';
+SHOW STATS;
+SET query.slow_query_ms = 50;
+CHECKPOINT;</code></pre>
+        </div>
+      </section>
+
+      <section class="doc-section" id="protocols" data-title="Binary, HTTP &amp; Text APIs" data-desc="Multiplexed EDB1 binary framing, HTTP/1.1 JSON endpoints, Text line protocol">
+        <h2>Protocols &amp; APIs</h2>
+        <p>All three protocols share port <code>7432</code> via first-byte inspection (<code>0x45</code> &rarr; Binary, HTTP verbs &rarr; HTTP/1.1, ASCII &rarr; Text).</p>
+
+        <div class="tabs">
+          <div class="tab-bar">
+            <button class="tab-btn active" type="button">curl (HTTP/JSON)</button>
+            <button class="tab-btn" type="button">Python (Binary EDB1)</button>
+            <button class="tab-btn" type="button">CLI</button>
+            <button class="tab-btn" type="button">Text TCP</button>
+          </div>
+          <div class="tab-panel active">
+            <pre><code>curl http://127.0.0.1:7432/health
+curl http://127.0.0.1:7432/metrics
+curl http://127.0.0.1:7432/config
+curl -X POST http://127.0.0.1:7432/query -d "SELECT 1 + 1 AS sum"
+curl -X POST http://127.0.0.1:7432/batch -d "CREATE TABLE t(id INT PRIMARY KEY); INSERT INTO t VALUES (1); SELECT * FROM t"</code></pre>
+          </div>
+          <div class="tab-panel">
+            <pre><code>import socket, struct
+
+def send_query(sock, sql: str):
+    payload = sql.encode("utf-8")
+    # Header: magic='E', op=2 (QUERY), flags=0, len=u32 LE
+    sock.sendall(struct.pack("&lt;BBHI", ord("E"), 2, 0, len(payload)) + payload)
+    magic, status, flags, rlen = struct.unpack("&lt;BBHI", sock.recv(8))
+    body = b""
+    while len(body) &lt; rlen:
+        body += sock.recv(rlen - len(body))
+    return status, flags, body</code></pre>
+          </div>
+          <div class="tab-panel">
+            <pre><code>elliottdb cli -H 127.0.0.1 -p 7432
+elliottdb cli -c "SELECT * FROM users" -f table
+elliottdb cli -c "SELECT * FROM users" -f json
+elliottdb cli -c "SELECT * FROM users" -f csv</code></pre>
+          </div>
+          <div class="tab-panel">
+            <pre><code>printf "CREATE TABLE k(id INT PRIMARY KEY)\nINSERT INTO k VALUES (42)\nSELECT * FROM k\nQUIT\n" | nc 127.0.0.1 7432</code></pre>
+          </div>
+        </div>
+
+        <h3>Binary Protocol (<code>EDB1</code>) Frame Layout</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Offset</th><th>Field</th><th>Values</th></tr></thead>
+            <tbody>
+              <tr><td><code>0</code></td><td><code>magic</code> (u8)</td><td><code>0x45</code> (<code>'E'</code>) request · <code>0x52</code> (<code>'R'</code>) response</td></tr>
+              <tr><td><code>1</code></td><td><code>op / status</code> (u8)</td><td>Req: <code>1=PING, 2=QUERY, 3=BATCH, 4=AUTH, 5=PREPARE, 6=EXEC</code> · Resp: <code>0=OK..12=INTERNAL</code></td></tr>
+              <tr><td><code>2..3</code></td><td><code>flags</code> (u16 LE)</td><td>Resp: <code>bit 0 = is_select_like</code>, <code>bit 1 = from_cache</code></td></tr>
+              <tr><td><code>4..7</code></td><td><code>len</code> (u32 LE)</td><td>Byte length of payload following header (supports arbitrary pipelining)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Full HTTP schema: <a href="api/openapi.json"><code>api/openapi.json</code></a> (OpenAPI 3.1.0).</p>
+      </section>
+
+      <section class="doc-section" id="config" data-title="92-Option Config Explorer" data-desc="Interactive filterable configuration builder for all 11 sections">
+        <h2>Interactive Configuration Explorer (92 Options)</h2>
+        <p>Precedence (lowest &rarr; highest): Built-in defaults &rarr; <code>elliottdb.conf</code> (<code>-c</code>) &rarr; <code>ELLIOTTDB_&lt;SECTION&gt;_&lt;KEY&gt;</code> env vars &rarr; <code>--section.key=val</code> CLI flags &rarr; runtime SQL <code>SET</code>.</p>
+
+        <div class="preset-bar">
+          <button class="pill-btn" type="button" data-preset="default">Reset Defaults</button>
+          <button class="pill-btn" type="button" data-preset="memory">Ultra-Fast In-Memory</button>
+          <button class="pill-btn" type="button" data-preset="balanced">Balanced Production</button>
+          <button class="pill-btn" type="button" data-preset="strict">Strict ACID + Auth</button>
+          <button class="pill-btn" type="button" data-preset="gateway">Massive Concurrency</button>
+        </div>
+
+        <div class="cfg-controls">
+          <input class="cfg-input" id="cfgSearch" type="search" placeholder="Filter by key, env var, or description...">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="cfgMutableOnly"> Runtime <code>SET</code> only
+          </label>
+          <span id="cfgCount" style="font-size:12.5px;color:var(--text-muted)"></span>
+        </div>
+
+        <div class="cfg-pills" id="cfgPills"></div>
+
+        <div class="table-wrap" style="max-height:480px;overflow-y:auto">
+          <table>
+            <thead>
+              <tr><th>Key / Env Var</th><th>Value</th><th>Type / Range</th><th>Mutability</th><th>Description</th></tr>
+            </thead>
+            <tbody id="cfgTableBody"></tbody>
+          </table>
+        </div>
+
+        <h3>Generated <code>elliottdb.conf</code> &amp; CLI Overrides</h3>
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <button class="btn" id="copyConfBtn" type="button">Copy INI Config</button>
+          <button class="btn" id="downloadConfBtn" type="button">Download elliottdb.conf</button>
+          <button class="btn" id="copyCliBtn" type="button">Copy CLI Command</button>
+        </div>
+        <div class="code-wrap"><pre><code id="cfgPreview"></code></pre></div>
+        <div class="code-wrap"><pre><code id="cfgCliPreview"></code></pre></div>
+      </section>
+
+      <section class="doc-section" id="operations" data-title="Building &amp; Tuning" data-desc="Single-binary builds on Windows and Linux, durability modes">
+        <h2>Building &amp; Operations</h2>
+        <div class="code-wrap">
+          <pre><code>:: Windows single static binary (MSVC /O2 /MT /W4)
+build.bat
+dumpbin /dependents build\elliottdb.exe   # WS2_32.dll + KERNEL32.dll only
+
+# Linux single binary (GCC/Clang -std=c11 -O3)
+make static                               # or ./build.sh --static
+cmake -B build_cmake -G Ninja &amp;&amp; cmake --build build_cmake
+
+# Run automated end-to-end test &amp; benchmark suite
+python tests/test_suite.py</code></pre>
+        </div>
+        <div class="callout warn">
+          <strong>Durability Modes (<code>wal.sync_mode</code>):</strong> Use <code>normal</code> (default) for fast OS page-cache writes + periodic checkpoints, <code>full</code> for per-commit <code>FlushFileBuffers</code>/<code>fdatasync</code> with group commit coalescing, or <code>off</code> / <code>--memory</code> for ephemeral caches.
+        </div>
+      </section>
+
+      <section class="doc-section" id="agents" data-title="AI Agents &amp; Schemas" data-desc="AGENTS.md, AGENTS-LITE.md, llms.txt, llms-full.txt, config-schema.json, openapi.json">
+        <h2>AI Agent Integration</h2>
+        <p>ElliottDB ships first-class, machine-readable documentation artifacts designed for coding agents, tool-calling clients, and automated context windows.</p>
+        <div class="card-grid">
+          <div class="card">
+            <h4><a href="agents-lite.md"><code>AGENTS-LITE.md</code></a></h4>
+            <p>Compact, ultra-information-dense spec (~100 lines) engineered for minimal token budgets in system prompts.</p>
+          </div>
+          <div class="card">
+            <h4><a href="agents.md"><code>AGENTS.md</code></a></h4>
+            <p>Full engineering handbook: file-by-file map, concurrency/lock invariants, byte-level protocols, and build/test recipes.</p>
+          </div>
+          <div class="card">
+            <h4><a href="llms.txt"><code>llms.txt</code></a> &amp; <a href="llms-full.txt"><code>llms-full.txt</code></a></h4>
+            <p>Standard LLM directory and single-file plaintext knowledge bundle containing SQL, APIs, and all 92 config keys.</p>
+          </div>
+          <div class="card">
+            <h4><a href="api/config-schema.json"><code>config-schema.json</code></a> &amp; <a href="api/openapi.json"><code>openapi.json</code></a></h4>
+            <p>Auto-generated JSON schema of all 92 configuration specs plus OpenAPI 3.1.0 HTTP specification.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="toc-right" aria-label="On This Page">
+      <h4>On This Page</h4>
+      <a href="#overview">Overview</a>
+      <a href="#benchmarks">Benchmarks</a>
+      <a href="#subcommands">Subcommands</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#storage-engine">Storage &amp; WAL</a>
+      <a href="#sql">SQL Dialect</a>
+      <a href="#protocols">Protocols &amp; APIs</a>
+      <a href="#config">Config Explorer</a>
+      <a href="#operations">Building &amp; Tuning</a>
+      <a href="#agents">AI Agents</a>
+    </aside>
+  </div>
+
+  <div class="modal-backdrop" id="searchModal" role="dialog" aria-modal="true" aria-label="Search Documentation">
+    <div class="modal">
+      <div class="modal-head">
+        <input id="modalSearchInput" type="text" placeholder="Type to search sections, SQL, or any of 92 config keys...">
+        <span class="kbd">ESC</span>
+      </div>
+      <div class="modal-results" id="modalSearchResults"></div>
+    </div>
+  </div>
+
+  <script src="config-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

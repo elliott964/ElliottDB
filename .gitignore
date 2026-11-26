@@ -1,0 +1,13 @@
+build/
+build_cmake/
+elliottdb_data/
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.edb
+*.wal
+*.conf
+__pycache__/
+*.pyc
+.DS_Store

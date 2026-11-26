@@ -1,0 +1,115 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ElliottDB HTTP/1.1 JSON API",
+    "version": "1.0.0",
+    "description": "Multiplexed HTTP/1.1 Keep-Alive JSON interface exposed on ElliottDB's primary TCP port (default 7432) or dedicated server.http_port."
+  },
+  "servers": [
+    { "url": "http://127.0.0.1:7432", "description": "Default local ElliottDB server" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BasicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "Required on all endpoints except /health when security.auth_enabled=true."
+      }
+    },
+    "schemas": {
+      "QueryResult": {
+        "type": "object",
+        "required": ["ok", "elapsed_us"],
+        "properties": {
+          "ok": { "type": "boolean" },
+          "status": { "type": "string" },
+          "error": { "type": "string" },
+          "rows_affected": { "type": "integer" },
+          "last_insert_id": { "type": "integer" },
+          "elapsed_us": { "type": "integer" },
+          "cached": { "type": "boolean" },
+          "columns": { "type": "array", "items": { "type": "string" } },
+          "rows": { "type": "array", "items": { "type": "array", "items": {} } }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check (exempt from auth)",
+        "responses": {
+          "200": {
+            "description": "Server healthy",
+            "content": {
+              "application/json": {
+                "example": { "status": "ok", "version": "1.0.0", "node": "elliottdb-1", "uptime_sec": 42 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Runtime atomic counters and microsecond latency percentiles",
+        "security": [{ "BasicAuth": [] }],
+        "responses": {
+          "200": { "description": "Metrics JSON object" },
+          "401": { "description": "Unauthorized when auth_enabled=true" }
+        }
+      }
+    },
+    "/config": {
+      "get": {
+        "summary": "Effective runtime configuration (92 options; admin_password masked)",
+        "security": [{ "BasicAuth": [] }],
+        "responses": {
+          "200": { "description": "Flat JSON map of section.key to value" }
+        }
+      }
+    },
+    "/query": {
+      "post": {
+        "summary": "Execute a single SQL statement",
+        "security": [{ "BasicAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/plain": { "schema": { "type": "string" }, "example": "SELECT * FROM users WHERE id = 1" },
+            "application/json": {
+              "schema": { "type": "object", "required": ["sql"], "properties": { "sql": { "type": "string" } } },
+              "example": { "sql": "SELECT * FROM users WHERE id = 1" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Query succeeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/QueryResult" } } } },
+          "400": { "description": "SQL or constraint error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/QueryResult" } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/batch": {
+      "post": {
+        "summary": "Execute multiple semicolon-delimited SQL statements",
+        "security": [{ "BasicAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/plain": {
+              "schema": { "type": "string" },
+              "example": "CREATE TABLE t (id INT PRIMARY KEY); INSERT INTO t VALUES (1); SELECT * FROM t"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Array of QueryResult objects",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/QueryResult" } } } }
+          }
+        }
+      }
+    }
+  }
+}
